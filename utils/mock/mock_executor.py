@@ -126,6 +126,8 @@ class Mock:
         containerName = self.current_snapshot.split("_")[0] + "_" + scriptletName + (("_" + extraFlag) if extraFlag != "" else "")
         o, e, r = exxec.processToStringsWithResult(
             self.mainCommand() + [containerName, "-f", "utils/mock/dockerfiles/RunScriptlet", ".", "--build-arg", "BASE_IMAGE=" + self.current_snapshot, "--build-arg", "EXECUTOR=" + executor, "--build-arg", "FILE=" + self.scriptletTmpDir + "/" + scriptletFileName])
+        if scriptletFileName + " failed!!" in o:
+            r = 1
         if r != 0:
             la.LoggingAccess().log("Container creation failed with exit code: " + str(r) + " and error message: " + e + ".")
         self.current_snapshot = containerName
