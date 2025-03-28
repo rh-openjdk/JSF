@@ -1,7 +1,7 @@
 import sys
 import os
 from utils.core.configuration_specific import JdkConfiguration
-from utils.mock.mock_executor import DefaultMock
+from utils.podman.podman_executor import DefaultPodman
 import config.runtime_config
 import config.global_config as gc
 import utils.core.unknown_java_exception as ex
@@ -9,7 +9,7 @@ import outputControl.logging_access as la
 import utils.core.base_xtest
 import utils.rpm_list
 import utils.pkg_name_split
-import utils.mock.mock_execution_exception
+import utils.podman.podman_execution_exception
 from utils.test_constants import *
 from utils.test_utils import log_failed_test, rename_default_subpkg, passed_or_failed
 from outputControl import dom_objects as do
@@ -42,8 +42,8 @@ class PriorityTest(JdkConfiguration):
         self.list_of_failed_tests = []
 
     def _get_priority(self, master):
-        """ This method calls chroot in mock and gets priority from pre-configured methods. """
-        priority = DefaultMock().get_priority(master)
+        """ This method calls chroot in podman and gets priority from pre-configured methods. """
+        priority = DefaultPodman().get_priority(master)
         if priority is None:
             PriorityCheck.instance.log("Priority not found in output for master " + master + ", output is invalid.",
                                        vc.Verbosity.TEST)
@@ -96,11 +96,11 @@ class PriorityTest(JdkConfiguration):
 
 class MajorCheck(PriorityTest):
     def _prepare_for_check(self, pkg):
-        return DefaultMock().run_all_scriptlets_for_install(pkg)
+        return DefaultPodman().run_all_scriptlets_for_install(pkg)
 
     def _check_priorities(self, pkgs):
 
-        _default_masters = DefaultMock().get_default_masters()
+        _default_masters = DefaultPodman().get_default_masters()
 
         # stores a dict of {pkg_name : {master : priority }}
         _pkgPriorities = {}
@@ -114,19 +114,19 @@ class MajorCheck(PriorityTest):
 
             # must be here anyway, since it creates the snapshot
             if not self._prepare_for_check(pkg):
-                # logs itself in mock
+                # logs itself in podman
                 continue
 
             _pkgPriorities[pkg_name] = {}
 
-            masters = DefaultMock().get_masters()
+            masters = DefaultPodman().get_masters()
             for m in masters:
                 #ignoring libjavaplugin as Jvanek stated is unnecessary for us to check on.
                 if m in _default_masters or LIBJAVAPLUGIN in m:
                     continue
                 try:
                     priority = self._get_priority(m)
-                except utils.mock.mock_execution_exception.MockExecutionException as e:
+                except utils.podman.podman_execution_exception.PodmanExecutionException as e:
                     passed_or_failed(self, False, str(e))
                     if "failed " not in str(e):
                         raise e
@@ -199,8 +199,8 @@ class Ibm8Rhel8Java(ProprietaryJava8):
     def _prepare_for_check(self, pkg):
         output = True
         if "plugin" in pkg:
-            output = DefaultMock().run_all_scriptlets_for_install(pkg.replace("plugin", "webstart"))
-        return DefaultMock().run_all_scriptlets_for_install(pkg) and output
+            output = DefaultPodman().run_all_scriptlets_for_install(pkg.replace("plugin", "webstart"))
+        return DefaultPodman().run_all_scriptlets_for_install(pkg) and output
 
 
 class Temurin(MajorCheck):

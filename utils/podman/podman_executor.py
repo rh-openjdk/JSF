@@ -3,11 +3,11 @@ import os
 import re
 from traceback import extract_tb
 
-import utils.mock.rpm_uncpio_cache
+import utils.podman.rpm_uncpio_cache
 import utils.process_utils as exxec
 import utils.rpmbuild_utils as rpmuts
 import utils.test_utils as tu
-import utils.mock.mock_execution_exception
+import utils.podman.podman_execution_exception
 import utils.pkg_name_split
 import config.runtime_config as rc
 import config.global_config as gc
@@ -22,7 +22,7 @@ SLAVES = "slaves"
 ALTERNATIVES_DIR = "/var/lib/alternatives"
 
 
-class Mock:
+class Podman:
     caredTopDirs = [
         "/bin",
         "/boot",
@@ -44,9 +44,9 @@ class Mock:
 
     def __init__(self, os="fedora", version="rawhide", arch="x86_64", command="podman"):
         """
-        This is a base constructor for DefaultMock. Arguments should never be changed when initiating new instance,
+        This is a base constructor for DefaultPodman. Arguments should never be changed when initiating new instance,
         unless you need it for some valid reasons (so far, there are NONE).
-        Version of mock must be currently < 27 (26 is obsoleted though). This is necessary due to rich dependencies in
+        Version of podman must be currently < 27 (26 is obsoleted though). This is necessary due to rich dependencies in
         fedora 28 packages, that do not work on RHEL 7 VM's. As soon as we got good RHEL 8 images, we must switch back
         to rawhide and run this framework there, so we do not have to switch chroot every year or so.
         """
@@ -61,15 +61,15 @@ class Mock:
         self.temp_name = "temp_name"
         self.containerRpmsLocation = "/rpms"
         self.scriptletTmpDir = "scriptletsLocalTMP"
-        la.LoggingAccess().log("Providing new instance of " + self.getMockName(),
-                                                         vc.Verbosity.MOCK)
+        la.LoggingAccess().log("Providing new instance of " + self.getPodmanName(),
+                                                         vc.Verbosity.PODMAN)
         self.init()
         # comment this, set inited and alternatives to true if debug of some test needs to be done in hurry, it is
         # sometimes acting strange though, so I do not recommend it (overlayfs plugin is quite fast so take the time
         # self._scrubLvmCommand()
         # self.init()
 
-    def getMockName(self):
+    def getPodmanName(self):
         return self.os + ":" + self.version
 
     def mainCommand(self):
@@ -94,7 +94,7 @@ class Mock:
         containerName = utils.pkg_name_split.get_package_name(ntpath.basename(rpmPath))
         if resetBuildRoot:
             self.provideCleanUsefullRoot()
-        o, e, r = exxec.processToStringsWithResult(self.mainCommand() + [containerName,"-f","utils/mock/dockerfiles/Copyin", ".", "--build-arg", "BASE_IMAGE=" + self.current_snapshot, "--build-arg", "FILE=" + rpmPath, "--build-arg", "DEST=" + self.containerRpmsLocation])
+        o, e, r = exxec.processToStringsWithResult(self.mainCommand() + [containerName,"-f","utils/podman/dockerfiles/Copyin", ".", "--build-arg", "BASE_IMAGE=" + self.current_snapshot, "--build-arg", "FILE=" + rpmPath, "--build-arg", "DEST=" + self.containerRpmsLocation])
         if r != 0:
             la.LoggingAccess().log("Importing rpmfile " + rpmPath + " to the container name " + self.current_snapshot + " failed with exit code " + str(r) + ".")
             la.LoggingAccess().log("Error message given was: " + e)
@@ -103,7 +103,7 @@ class Mock:
 
     def executeCommand(self, cmds):
         o, e, r = exxec.executeShell(" ".join([self.command, "run", "--rm", "-it", self.current_snapshot, "/bin/sh", "-c", "\'"] + cmds + ["\'"]))
-        la.LoggingAccess().log(e, vc.Verbosity.MOCK)
+        la.LoggingAccess().log(e, vc.Verbosity.PODMAN)
         return o, r
 
     #def executeScriptlet(self, executor, file, params, suffix):
@@ -114,7 +114,7 @@ class Mock:
         if self.inited:
             self.current_snapshot=initName
         else:
-            o, e, r = exxec.processToStringsWithResult(self.mainCommand() + [initName, "-f","utils/mock/dockerfiles/Init", "."])
+            o, e, r = exxec.processToStringsWithResult(self.mainCommand() + [initName, "-f","utils/podman/dockerfiles/Init", "."])
             if r != 0:
                 la.LoggingAccess().log("Container creation failed with exit code: " + str(r) + " and error message: " + e + ".")
             self.inited = True
@@ -125,7 +125,7 @@ class Mock:
         scriptletFileName = scriptletFile.split("/")[-1]
         containerName = self.current_snapshot.split("_")[0] + "_" + scriptletName + (("_" + extraFlag) if extraFlag != "" else "")
         o, e, r = exxec.processToStringsWithResult(
-            self.mainCommand() + [containerName, "-f", "utils/mock/dockerfiles/RunScriptlet", ".", "--build-arg", "BASE_IMAGE=" + self.current_snapshot, "--build-arg", "EXECUTOR=" + executor, "--build-arg", "FILE=" + self.scriptletTmpDir + "/" + scriptletFileName])
+            self.mainCommand() + [containerName, "-f", "utils/podman/dockerfiles/RunScriptlet", ".", "--build-arg", "BASE_IMAGE=" + self.current_snapshot, "--build-arg", "EXECUTOR=" + executor, "--build-arg", "FILE=" + self.scriptletTmpDir + "/" + scriptletFileName])
         if scriptletFileName + " failed!!" in o:
             r = 1
         if r != 0:
@@ -146,7 +146,7 @@ class Mock:
         key = utils.pkg_name_split.get_subpackage_only((ntpath.basename(pkg))) + "_" + utils.rpmbuild_utils.ScripletStarterFinisher.installScriptlets[-1] + "_" + "a"
         if key in self.snapshots:
             la.LoggingAccess().log(pkg + " already installed in snapshot. Rolling to " + key,
-                                   vc.Verbosity.MOCK)
+                                   vc.Verbosity.PODMAN)
             self.getSnapshot(key)
             return
         self.importRpm(pkg)
@@ -156,7 +156,7 @@ class Mock:
                                    vc.Verbosity.TEST)
             try:
                 self.executeScriptlet(pkg, script, "a")
-            except utils.mock.mock_execution_exception.MockExecutionException:
+            except utils.podman.podman_execution_exception.PodmanExecutionException:
                 la.LoggingAccess().log("        " + script + " script not found in " +
                                        os.path.basename(pkg),
                                        vc.Verbosity.TEST)
@@ -180,15 +180,15 @@ class Mock:
         #output = self.display_alternatives(master)
         if len(output.strip()) == 0:
             la.LoggingAccess().log("alternatives --display master output is empty",
-                                   vc.Verbosity.MOCK)
-            raise utils.mock.mock_execution_exception.MockExecutionException("alternatives --display master "
+                                   vc.Verbosity.PODMAN)
+            raise utils.podman.podman_execution_exception.PodmanExecutionException("alternatives --display master "
                                                                              "output is empty ")
         data = {}
         otp = output.splitlines()
         try:
             data[PRIORITY] = otp[2].split(" ")[-1]
         except Exception:
-            raise utils.mock.mock_execution_exception.MockExecutionException("alternatives output reading encountered "
+            raise utils.podman.podman_execution_exception.PodmanExecutionException("alternatives output reading encountered "
                                                                              "an error: " + output)
         if not data[PRIORITY].isdigit():
             raise ValueError("Priority must be digit-only.")
@@ -236,7 +236,7 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-# Try to avoid making unnecessary instances of Mock()
-# if possible, try to work with the DefaultMock and its snapshots
-class DefaultMock(Mock, metaclass=Singleton):
+# Try to avoid making unnecessary instances of Podman()
+# if possible, try to work with the DefaultPodman and its snapshots
+class DefaultPodman(Podman, metaclass=Singleton):
     pass

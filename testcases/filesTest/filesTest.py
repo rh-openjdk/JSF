@@ -6,7 +6,7 @@ import utils.test_utils as tu
 import outputControl.dom_objects as do
 import utils.core.base_xtest as bt
 import config.runtime_config as rc
-import utils.mock.mock_executor as me
+import utils.podman.podman_executor as me
 import config.global_config as gc
 
 OJDK11CHECKEDFILES = {tc.DEFAULT: ["/usr/lib/jvm/**NVRA**/lib/jspawnhelper"]}
@@ -30,7 +30,7 @@ class Default(cs.JdkConfiguration):
         return self.passed, self.failed
 
     def check_file_existence(self, file):
-        out, res = me.DefaultMock().execute_ls(file)
+        out, res = me.DefaultPodman().execute_ls(file)
         return res == 0
 
 

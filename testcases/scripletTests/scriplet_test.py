@@ -4,7 +4,7 @@ import sys
 import utils.core.base_xtest
 import utils.rpmbuild_utils as rpmbu
 import outputControl.logging_access as la
-from utils.mock.mock_executor import DefaultMock
+from utils.podman.podman_executor import DefaultPodman
 from utils.rpmbuild_utils import ScripletStarterFinisher
 import utils.pkg_name_split as ns
 import utils.test_utils as tu
@@ -74,7 +74,7 @@ class ScriptletTest(utils.core.base_xtest.BaseTest):
     # this test is currently disabled
     def check_allScripletsPReturnsZero(self, pkgs):
         for pkg in pkgs:
-            DefaultMock().importRpm(pkg)
+            DefaultPodman().importRpm(pkg)
             # now applying scriplets in order
             for phase in [ScripletStarterFinisher.installScriptlets, ScripletStarterFinisher.uninstallScriptlets]:
                 for scriplet in phase:
@@ -86,7 +86,7 @@ class ScriptletTest(utils.core.base_xtest.BaseTest):
                         self.log("is " + str(len(content)) + " lines long")
                         self.log("executing " + scriplet + " in " + ntpath.basename(pkg))
                         arg = "1" if scriplet in ScripletStarterFinisher.installScriptlets else "0"
-                        o, r = DefaultMock().executeScriptlet(pkg, scriplet, arg)
+                        o, r = DefaultPodman().executeScriptlet(pkg, scriplet, arg)
                         self.log(scriplet + " returned " + str(r) + " of " + ntpath.basename(pkg))
                         tu.passed_or_failed(self, r == 0,
                                             "scriptlet {} returning non zero value for {}".format(scriplet, pkg)

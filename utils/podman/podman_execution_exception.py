@@ -1,0 +1,2 @@
+class PodmanExecutionException(BaseException):
+    pass

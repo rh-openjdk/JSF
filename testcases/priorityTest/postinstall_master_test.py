@@ -9,7 +9,7 @@ import config.runtime_config as rc
 import utils.core.unknown_java_exception as ex
 import utils.pkg_name_split as pkgsplit
 import utils
-from utils.mock.mock_executor import DefaultMock
+from utils.podman.podman_executor import DefaultPodman
 from config.global_config import get_32b_arch_identifiers_in_scriptlets as get_id
 from utils.test_utils import rename_default_subpkg, passed_or_failed, get_arch
 from utils.test_constants import *
@@ -79,12 +79,12 @@ class CheckPostinstallScript(BasePackages):
         skipped = []
 
         # we need to delete the already existing masters so we get only the installed ones
-        _default_masters = DefaultMock().get_default_masters()
+        _default_masters = DefaultPodman().get_default_masters()
 
         # correct set of masters
         expected_masters = self._generate_masters()
 
-        # masters installed in mock
+        # masters installed in podman
         actual_masters = {}
 
         for pkg in pkgs:
@@ -98,10 +98,10 @@ class CheckPostinstallScript(BasePackages):
                                                                                "subpackages does not contain "
                                                                                "any postinstall.")
                 continue
-            if not DefaultMock().run_all_scriptlets_for_install(pkg):
+            if not DefaultPodman().run_all_scriptlets_for_install(pkg):
                 skipped.append(_subpackage)
                 continue
-            pkg_masters = DefaultMock().get_masters()
+            pkg_masters = DefaultPodman().get_masters()
 
             for m in _default_masters:
                 pkg_masters.remove(m)

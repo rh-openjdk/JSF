@@ -3,7 +3,7 @@ import utils.pkg_name_split as ns
 import testcases.alternativesTests.binaries_test_paths as btp
 import utils.test_constants as tc
 import utils.test_utils as tu
-import utils.mock.mock_executor as mexe
+import utils.podman.podman_executor as mexe
 import outputControl.logging_access as la
 
 # This script should contain only configuration specific implemetation of the method and overriden methods code.
@@ -471,8 +471,8 @@ class Itw(bsm.BinarySlaveTestMethods):
         return
 
     def _get_all_binaries_and_slaves(self, pkgs):
-        mexe.DefaultMock().provideCleanUsefullRoot()
-        original_binaries = mexe.DefaultMock().execute_ls(tc.USR_BIN)[0].split("\n")
+        mexe.DefaultPodman().provideCleanUsefullRoot()
+        original_binaries = mexe.DefaultPodman().execute_ls(tc.USR_BIN)[0].split("\n")
         installed_binaries, installed_slaves = super()._get_all_binaries_and_slaves(pkgs)
         installed_binaries = self._remove_links_from_usr_bin(installed_binaries)
         for subpackage in installed_binaries.keys():

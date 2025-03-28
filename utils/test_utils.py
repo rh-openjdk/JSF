@@ -8,7 +8,7 @@ import outputControl.logging_access as la
 import config.runtime_config
 import outputControl.dom_objects as do
 #must do otherway in case of cyclic dependencies
-import utils.mock.mock_executor as mexe
+import utils.podman.podman_executor as mexe
 import utils.core.configuration_specific as cs
 import utils.core.base_xtest as bx
 import config.verbosity_config as vc
@@ -248,9 +248,9 @@ def validate_arch_for_rpms(arch):
     return arch
 
 
-# expects initialized mock
+# expects initialized podman
 def resolve_link(link):
-    out = mexe.DefaultMock().executeCommand(["readlink", link])
+    out = mexe.DefaultPodman().executeCommand(["readlink", link])
     newlink = out[0].replace("\n", "")
     if newlink == "":
         return link

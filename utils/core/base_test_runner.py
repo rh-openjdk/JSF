@@ -13,7 +13,7 @@ import utils.core.configuration_specific as cs
 import outputControl.logging_access as la
 import outputControl.dom_objects as do
 import config.verbosity_config as vc
-import utils.mock.mock_executor as mexe
+import utils.podman.podman_executor as mexe
 
 def lsort(someList):
     if config.global_config.leSort:
@@ -152,8 +152,8 @@ class BaseTestRunner:
             passed_for_architecture = len(do.Tests().get_tests()) - do.Tests().count_failed()
             la.LoggingAccess().log(
                     tu.xmltestsuite(0, failed_for_architecture, passed_for_architecture, passed_for_architecture +
-                                    failed_for_architecture, 0, type(self).__name__, mexe.DefaultMock().os
-                                    + mexe.DefaultMock().version + "-vagrant", ms, dt.datetime.now().isoformat()),
+                                    failed_for_architecture, 0, type(self).__name__, mexe.DefaultPodman().os
+                                    + mexe.DefaultPodman().version + "-vagrant", ms, dt.datetime.now().isoformat()),
                     vc.Verbosity.JTREG, type(self).__name__)
             for testcase in do.Tests().get_tests():
                     la.LoggingAccess().log(testcase.print_test_case(), vc.Verbosity.JTREG, type(self).__name__)

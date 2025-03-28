@@ -1,6 +1,6 @@
-import utils.mock.mock_executor as mexe
+import utils.podman.podman_executor as mexe
 import utils.pkg_name_split as pkgsplit
-import utils.mock.mock_execution_exception as mexc
+import utils.podman.podman_execution_exception as mexc
 import os
 import config.runtime_config as rc
 import testcases.alternativesTests.binaries_test_paths as btp
@@ -72,14 +72,14 @@ class GetAllBinariesAndSlaves(btp.PathTest):
         self._document("Checking slaves for masters:"
                        " {}".format(" and ".join(tu.replace_archs_with_general_arch(checked_masters, self._get_arch()))))
 
-        masters = mexe.DefaultMock().get_masters()
+        masters = mexe.DefaultPodman().get_masters()
         clean_slaves = []
         for m in checked_masters:
             if m not in masters:
                 continue
             try:
-                slaves = mexe.DefaultMock().get_slaves(m)
-            except mexc.MockExecutionException:
+                slaves = mexe.DefaultPodman().get_slaves(m)
+            except mexc.PodmanExecutionException:
                 self.binaries_test.log("No relevant slaves were present for " + _subpkg + ".", vc.Verbosity.TEST)
                 continue
             self.binaries_test.log("Found slaves for {}: {}".format(_subpkg, str(slaves)), vc.Verbosity.TEST)
@@ -103,10 +103,10 @@ class GetAllBinariesAndSlaves(btp.PathTest):
                 self.binaries_test.log("Skipping binaries extraction for " + _subpkg)
                 self.skipped.append(_subpkg)
                 continue
-            if not mexe.DefaultMock().run_all_scriptlets_for_install(pkg):
+            if not mexe.DefaultPodman().run_all_scriptlets_for_install(pkg):
                 self.binaries_test.log("Failed to execute postinstall. Slaves will not be found for " + _subpkg)
             binary_directory_path = self._get_binary_directory_path(name)
-            binaries = mexe.DefaultMock().execute_ls(binary_directory_path)
+            binaries = mexe.DefaultPodman().execute_ls(binary_directory_path)
 
             if binaries[1] != 0:
                 self.binaries_test.log("Location {} does not exist, binaries test skipped "

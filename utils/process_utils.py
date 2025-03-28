@@ -20,7 +20,7 @@ def processToStringsWithResult(args, err=True, cwd=None):
     outpute = ""
     if err is not None:
         outpute = err.decode('utf-8').strip()
-    la.LoggingAccess().log("got: " + output, vc.Verbosity.MOCK)
+    la.LoggingAccess().log("got: " + output, vc.Verbosity.PODMAN)
     ret = proc.wait()
     return output, outpute, ret
 
@@ -39,15 +39,15 @@ def processAsStringsWithResult(args, starter=None, finisher=None, initialCanRead
     for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
         line = line.strip()
         if log:
-            la.LoggingAccess().log("reading: "+line, vc.Verbosity.MOCK)
+            la.LoggingAccess().log("reading: "+line, vc.Verbosity.PODMAN)
         if canRead and finisher is not None:
             canRead = finisher(line)
             if not canRead:
-                la.LoggingAccess().log(str(finisher)+" stopped recording", vc.Verbosity.MOCK)
+                la.LoggingAccess().log(str(finisher)+" stopped recording", vc.Verbosity.PODMAN)
         if not canRead and starter is not None:
             canRead = starter(line)
             if canRead:
-                la.LoggingAccess().log(str(starter) + " started recording", vc.Verbosity.MOCK)
+                la.LoggingAccess().log(str(starter) + " started recording", vc.Verbosity.PODMAN)
         if canRead:
             res.append(line)
     ret = proc.wait()
@@ -55,7 +55,7 @@ def processAsStringsWithResult(args, starter=None, finisher=None, initialCanRead
 
 
 def _exec(args, err=False, cwd=None):
-    la.LoggingAccess().log("executing: " + str(args), vc.Verbosity.MOCK)
+    la.LoggingAccess().log("executing: " + str(args), vc.Verbosity.PODMAN)
     if err:
         # args, bufsize=-1, executable=None, stdin=None, stdout=None, stderr=None, preexec_fn=None,
         # close_fds=_PLATFORM_DEFAULT_CLOSE_FDS, shell=False, cwd=None, env=None ...
@@ -66,7 +66,7 @@ def _exec(args, err=False, cwd=None):
 
 
 def executeShell(command):
-    la.LoggingAccess().log("executing shell : " + command, vc.Verbosity.MOCK)
+    la.LoggingAccess().log("executing shell : " + command, vc.Verbosity.PODMAN)
     shell = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
     o, e = shell.communicate()
     if o is not None:
