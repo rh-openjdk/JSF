@@ -127,9 +127,9 @@ def getSrciplet(rpmFile, scripletId):
                                vc.Verbosity.TEST)
     key = rpmFile+"-"+scripletId
     if key in scriptlets:
-        la.LoggingAccess().log(key + " already cached, returning", vc.Verbosity.MOCK)
+        la.LoggingAccess().log(key + " already cached, returning", vc.Verbosity.PODMAN)
         return scriptlets[key]
-    la.LoggingAccess().log(key + " not yet cached, reading", vc.Verbosity.MOCK)
+    la.LoggingAccess().log(key + " not yet cached, reading", vc.Verbosity.PODMAN)
     sf = ScripletStarterFinisher(scripletId)
     script = utils.process_utils.processAsStrings(['rpm', '-qp', '--scripts', rpmFile], sf.start, sf.stop,
                                                 False)

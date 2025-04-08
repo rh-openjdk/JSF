@@ -6,7 +6,7 @@ import config.global_config as gc
 import config.runtime_config as rc
 import utils
 import config.verbosity_config as vc
-from utils.mock.mock_executor import DefaultMock
+from utils.podman.podman_executor import DefaultPodman
 from utils.test_utils import rename_default_subpkg, get_arch, two_lists_diff, get_32bit_id_in_nvra,\
     passed_or_failed
 from utils.test_constants import *
@@ -48,8 +48,8 @@ class BaseTest(JdkConfiguration):
         self._document("On all files extracted from RPMs to {}/nvra and {} apply "
                        "following rules:".format(JVM_DIR, MAN_DIR))
         # get default manpages, since we check these too
-        DefaultMock().provideCleanUsefullRoot()
-        default_manpages, res = DefaultMock().execute_ls(MAN_DIR)
+        DefaultPodman().provideCleanUsefullRoot()
+        default_manpages, res = DefaultPodman().execute_ls(MAN_DIR)
         default_manpages = default_manpages.split("\n")
         passed_or_failed(self, res == 0, "Default manpages extraction has failed. Manpage tests will be invalid: " + str(res) +
                             str(default_manpages))
@@ -61,13 +61,13 @@ class BaseTest(JdkConfiguration):
                 PermissionTest.instance.log("Skipping " + pkg, vc.Verbosity.TEST)
                 continue
 
-            if not DefaultMock().run_all_scriptlets_for_install(pkg):
+            if not DefaultPodman().run_all_scriptlets_for_install(pkg):
                 continue
 
             # get content of jvm directory
             jvm_dir = self._get_target_java_directory(name)
-            out, result = DefaultMock().executeCommand(["ls -LR " + JVM_DIR + "/" + jvm_dir])
-            out = out.split("\n")
+            out, result = DefaultPodman().executeCommand(["ls -LR " + JVM_DIR + "/" + jvm_dir])
+            out = out.split()
             fails = []
             clearedout = []
             for line in out:
@@ -87,7 +87,7 @@ class BaseTest(JdkConfiguration):
             valid_targets = self._parse_output(clearedout, subpackage)
             self.sort_and_test(valid_targets, subpackage, name)
 
-            manpages = two_lists_diff(DefaultMock().execute_ls(MAN_DIR)[0].split("\n"), default_manpages)
+            manpages = two_lists_diff(DefaultPodman().execute_ls(MAN_DIR)[0].split(), default_manpages)
             for manpage in manpages:
                 self.sort_and_test([MAN_DIR + "/" + manpage], subpackage, name)
 
@@ -104,17 +104,18 @@ class BaseTest(JdkConfiguration):
         for line in out:
             if line == "":
                 continue
-            elif "cannot access" in line:
-                if passed_or_failed(self, subpackage == DEVEL and "/bin/" in line,
-                                    "In subpackage {} following was found: ".format(subpackage) + line,
-                                    "In subpackage {} following was found: ".format(subpackage) + line +
+            elif "cannot access" in " ".join(out):
+                error_line = " ".join(out)
+                if passed_or_failed(self, subpackage == DEVEL and "/bin/" in error_line,
+                                    "In subpackage {} following was found: ".format(subpackage) + error_line,
+                                    "In subpackage {} following was found: ".format(subpackage) + error_line +
                                     "This might be expected behaviour and should be only sanity checked."):
-                    self.invalid_file_candidates.append(line)
+                    self.invalid_file_candidates.append(error_line)
                     continue
                 else:
                     self.invalid_file_candidates.append(line)
                     PermissionTest.instance.log("Unexpected filetype. Needs manual inspection.")
-                continue
+                return return_targets
             elif header.search(line):
                 current_header = header.match(line)
                 current_header = current_header.group(0).strip(":")
@@ -138,7 +139,7 @@ class BaseTest(JdkConfiguration):
                                      " 755 permissions.",
                                      "Other types of files with different permissions should not be present."]))
         for target in valid_targets:
-            out, res = DefaultMock().executeCommand(['stat -c "%F" ' + target])
+            out, res = DefaultPodman().executeCommand(['stat -c "%F" ' + target])
             if JVM_DIR not in target and MAN_DIR not in target and res == 0:
                 passed_or_failed(self, True, "", "This target: " + target + " is located out of the jvm directory. "
                                                                             "These files are not checked.")
@@ -174,7 +175,7 @@ class BaseTest(JdkConfiguration):
                     self._test_fill_in(target, out, "644")
             elif out == "symbolic link":
                 self._test_fill_in(target, out, "777")
-                out, res = DefaultMock().executeCommand(["readlink " + target])
+                out, res = DefaultPodman().executeCommand(["readlink " + target])
                 if not passed_or_failed(self, res == 0,
                                         "Target of symbolic link {} does not exist.".format(target) + " Error " + out):
                     continue
@@ -229,9 +230,9 @@ class BaseTest(JdkConfiguration):
         This method takes as an argument path to a file, type of the file for logs, expected permission and checks,
         if it matches results from chroot. It also documents any fails or successful checks.
         """
-        out, res = DefaultMock().executeCommand(['stat -c "%a" ' + file])
+        out, res = DefaultPodman().executeCommand(['stat -c "%a" ' + file])
         if out == "775" and "ibm" in file:
-            PermissionTest.instance.log("Skipping " + file + ". Some unzipped Ibm packages are acting wierdly in mock. "
+            PermissionTest.instance.log("Skipping " + file + ". Some unzipped Ibm packages are acting wierdly in podman. "
                                                              "Howewer, in installed JDK, the permissions are correct.",
                                         vc.Verbosity.TEST)
             return
@@ -240,14 +241,14 @@ class BaseTest(JdkConfiguration):
             return
         else:
             PermissionTest.instance.log(filetype + " {} exists. Checking permissions... ".format(file),
-                                        vc.Verbosity.MOCK)
+                                        vc.Verbosity.PODMAN)
         for p in range(3):
             if not (int(out[p]) == int(expected_permission[p])):
                 passed_or_failed(self, False, "Permissions of {} not as expected, should be {} but is "
                                       "{}.".format(file, expected_permission, out))
                 return
         PermissionTest.instance.log(filetype + " {} with permissions {}. Check "
-                                    "successful.".format(file, out), vc.Verbosity.MOCK)
+                                    "successful.".format(file, out), vc.Verbosity.PODMAN)
         passed_or_failed(self, True, "")
         return
 

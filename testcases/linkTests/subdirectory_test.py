@@ -6,7 +6,7 @@ import config.runtime_config as rc
 import utils.core.base_xtest as bt
 import config.global_config as gc
 from utils.core.configuration_specific import JdkConfiguration
-from utils.mock.mock_executor import DefaultMock
+from utils.podman.podman_executor import DefaultPodman
 from utils.test_utils import rename_default_subpkg, replace_archs_with_general_arch, passed_or_failed, get_arch
 import utils.pkg_name_split as pkgsplit
 from utils.test_utils import get_32bit_id_in_nvra, log_failed_test
@@ -60,7 +60,7 @@ class BaseMethods(JdkConfiguration):
 
     def _remove_fake_subdirectories(self, subdirectories):
         """ There are created jce-1.x.x dirs by the engine of the framework for oracle and IBM java, that are made
-        during the installation, since we only extract, we crate them at mock init, this deletes them to avoid mess
+        during the installation, since we only extract, we crate them at podman init, this deletes them to avoid mess
         in tests."""
         return subdirectories
 
@@ -86,7 +86,7 @@ class BaseMethods(JdkConfiguration):
         for subdirectory in subdirectories:
             expected_link = self._get_expected_link(name)
 
-            # skipping created subdirs at mock init, are dirs, not links
+            # skipping created subdirs at podman init, are dirs, not links
             if "jce" in subdirectory:
                 SubdirectoryTest.instance.log(subdirectory + " is a directory.")
                 continue
@@ -94,7 +94,7 @@ class BaseMethods(JdkConfiguration):
             if "jre" in subdirectory:
                 expected_link = self._get_jre_link(expected_link)
 
-            readlink = DefaultMock().executeCommand(["readlink -f {}".format(JVM_DIR + "/" + subdirectory)])
+            readlink = DefaultPodman().executeCommand(["readlink -f {}".format(JVM_DIR + "/" + subdirectory)])
             if readlink[1] != 0:
                 passed_or_failed(self, False, subdirectory + " is not a link! Subdirectory test link failed for " +
                                 _subpkg)
@@ -112,16 +112,16 @@ class BaseMethods(JdkConfiguration):
             _subpkg = rename_default_subpkg(pkgsplit.get_subpackage_only(name))
             if _subpkg not in self._get_expected_subdirectories(name).keys():
                 continue
-            if not DefaultMock().run_all_scriptlets_for_install(pkg):
+            if not DefaultPodman().run_all_scriptlets_for_install(pkg):
                 SubdirectoryTest.instance.log("Skipping subdirectory test for {}".format(_subpkg), vc.Verbosity.TEST)
                 continue
 
-            subdirectories = DefaultMock().execute_ls(JVM_DIR)
+            subdirectories = DefaultPodman().execute_ls(JVM_DIR)
             if subdirectories[1] != 0:
                 passed_or_failed(self, False, "Warning: " + JVM_DIR + " does not exist, skipping subdirectory test for"
                                 " given subpackage {}".format(_subpkg))
                 continue
-            subdirectories = subdirectories[0].split("\n")
+            subdirectories = subdirectories[0].split()
             subdirectories = self._remove_fake_subdirectories(subdirectories)
             expected_subdirectories = self._get_expected_subdirectories(name)[_subpkg]
             expected_subdirectories = set(expected_subdirectories)

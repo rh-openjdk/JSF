@@ -3,7 +3,7 @@ import utils.pkg_name_split as ns
 import utils.test_utils as tu
 import outputControl.logging_access as la
 import utils.process_utils as pu
-import utils.mock.mock_executor as mexe
+import utils.podman.podman_executor as mexe
 import utils.core.base_xtest as bt
 import utils.test_constants as tc
 import utils.core.configuration_specific as cs
@@ -59,8 +59,8 @@ class Default(cs.JdkConfiguration):
 
     def _check_ghosts_per_file(self, file):
         rpm_ghosts = self._get_actual_ghosts(file)
-        default_masters = set(mexe.DefaultMock().get_default_masters())
-        mexe.DefaultMock().run_all_scriptlets_for_install("rpms/" + file)
+        default_masters = set(mexe.DefaultPodman().get_default_masters())
+        mexe.DefaultPodman().run_all_scriptlets_for_install("rpms/" + file)
         resolved_rpm_ghosts = set()
         for ghost in rpm_ghosts:
             newghost = ghost.replace("\n", "")
@@ -75,12 +75,12 @@ class Default(cs.JdkConfiguration):
         expected_master_ghosts = set()
         expected_follower_ghosts = set()
         if rc.RuntimeConfig().getRpmList().is_system_jdk():
-            expected_master_ghosts = set(mexe.DefaultMock().get_masters()).difference(default_masters)
+            expected_master_ghosts = set(mexe.DefaultPodman().get_masters()).difference(default_masters)
             for master in expected_master_ghosts.copy():
-                expected_follower_ghosts = expected_follower_ghosts.union(set(mexe.DefaultMock().get_slaves_with_links(master).values()))
+                expected_follower_ghosts = expected_follower_ghosts.union(set(mexe.DefaultPodman().get_slaves_with_links(master).values()))
         resolved_actual_ghosts = {}
         for ghost in expected_master_ghosts:
-            resolved_ghost = tu.resolve_link(mexe.DefaultMock().get_target(ghost))
+            resolved_ghost = tu.resolve_link(mexe.DefaultPodman().get_target(ghost))
             resolved_actual_ghosts[resolved_ghost] = ghost
         for ghost in expected_follower_ghosts:
             if ghost.startswith("/usr/lib/jvm/"):

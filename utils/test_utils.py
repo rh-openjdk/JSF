@@ -8,13 +8,13 @@ import outputControl.logging_access as la
 import config.runtime_config
 import outputControl.dom_objects as do
 #must do otherway in case of cyclic dependencies
-import utils.mock.mock_executor as mexe
+import utils.podman.podman_executor as mexe
 import utils.core.configuration_specific as cs
 import utils.core.base_xtest as bx
 import config.verbosity_config as vc
 
 def closeTestSuite(passed, failed, mtc):
-    la.LoggingAccess().stdout("Arch-independet mehtods counted: " + str(mtc))
+    la.LoggingAccess().stdout("Arch-independent methods counted: " + str(mtc))
     la.LoggingAccess().stdout("Passed=" + str(passed))
     la.LoggingAccess().stdout("Failed=" + str(failed))
     la.LoggingAccess().stdout("Total=" + str(failed + passed))
@@ -112,8 +112,8 @@ def removeNoarchSrpmArch(arches):
     return nwList
 
 
-def saveStringsAsTmpFile(strings, suffix):
-    tf = tempfile.NamedTemporaryFile(mode="wt", suffix=suffix, delete=False)
+def saveStringsAsTmpFile(strings, suffix, location=None):
+    tf = tempfile.NamedTemporaryFile(mode="wt", suffix=suffix, delete=False, dir=location)
     for item in strings:
         tf.file.write(str(item + "\n"))
     tf.flush()
@@ -248,9 +248,9 @@ def validate_arch_for_rpms(arch):
     return arch
 
 
-# expects initialized mock
+# expects initialized podman
 def resolve_link(link):
-    out = mexe.DefaultMock().executeCommand(["readlink", link])
+    out = mexe.DefaultPodman().executeCommand(["readlink", link])
     newlink = out[0].replace("\n", "")
     if newlink == "":
         return link

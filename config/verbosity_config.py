@@ -12,4 +12,4 @@ class Verbosity(enum.Enum):
     ERROR = 1
     TEST = 2
     JTREG = 3
-    MOCK = 4
+    PODMAN = 4

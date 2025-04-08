@@ -1,7 +1,7 @@
 from utils.core.configuration_specific import JdkConfiguration
-from utils.mock.mock_executor import DefaultMock
+from utils.podman.podman_executor import DefaultPodman
 import utils.pkg_name_split as pkgsplit
-from utils.mock.mock_execution_exception import MockExecutionException
+from utils.podman.podman_execution_exception import PodmanExecutionException
 from utils.test_utils import rename_default_subpkg, log_failed_test
 from config.global_config import get_32b_arch_identifiers_in_scriptlets as get_id
 import os
@@ -114,7 +114,7 @@ class PathTest(BaseTest):
             if _subpkg in subpackages_without_alternatives() + get_javadoc_dirs():
                 self.binaries_test.log("Skipping path test for " + _subpkg)
                 continue
-            if not DefaultMock().run_all_scriptlets_for_install(pkg):
+            if not DefaultPodman().run_all_scriptlets_for_install(pkg):
                 self.binaries_test.log("Skipping path test because of missing post install scriptlet.")
                 continue
             if (_subpkg == DEFAULT or _subpkg in [DEFAULT + suffix for suffix in get_debug_suffixes()])\
@@ -134,7 +134,7 @@ class PathTest(BaseTest):
                 if content[1] != 0:
                     content = []
                 else:
-                    content = content[0].split("\n")
+                    content = content[0].split()
                 path_contents[path] = content
 
             self.binaries_test.log("Validating binaries paths for {} subpackage: ".format(_subpkg), vc.Verbosity.TEST)
@@ -149,14 +149,14 @@ class PathTest(BaseTest):
         return
 
     def _get_paths(self):
-        paths = DefaultMock().executeCommand(["echo $PATH"])
+        paths = DefaultPodman().executeCommand(['printenv PATH'])
         if paths[1] != 0:
-            raise MockExecutionException("Command echo $PATH failed.")
+            raise PodmanExecutionException("Command echo $PATH failed.")
         paths = paths[0].split(os.pathsep)
         return paths
 
     def _get_path_contents(self, path):
-        content = DefaultMock().execute_ls(path)
+        content = DefaultPodman().execute_ls(path)
         return content
 
     def _binary_in_path_contents(self, path_contents, binary):
@@ -169,7 +169,7 @@ class PathTest(BaseTest):
         result = set()
         for p in paths:
             tg = "readlink " + p + "/" + binary
-            res = DefaultMock().executeCommand([tg])
+            res = DefaultPodman().executeCommand([tg])
             if passed_or_failed(self, res[1] == 0, "Command readlink " + p + "/" + binary + " failed."):
                 result.add(res)
         if len(result) != 1:

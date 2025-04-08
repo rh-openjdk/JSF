@@ -4,7 +4,7 @@ import outputControl.logging_access as la
 import config.runtime_config as rc
 import utils.core.base_xtest as bt
 from utils.core.configuration_specific import JdkConfiguration
-from utils.mock.mock_executor import DefaultMock
+from utils.podman.podman_executor import DefaultPodman
 from utils.test_utils import rename_default_subpkg, passed_or_failed, log_failed_test, get_arch
 from utils.test_utils import two_lists_diff as diff
 import utils.pkg_name_split as pkgsplit
@@ -129,20 +129,20 @@ class BaseMethods(JdkConfiguration):
 
         pkgs = SymlinkTest.instance.getBuild()
 
-        DefaultMock().provideCleanUsefullRoot()
+        DefaultPodman().provideCleanUsefullRoot()
         SymlinkTest.instance.log("Getting pre-existing symlinks", vc.Verbosity.TEST)
-        default_symlink_list = DefaultMock().executeCommand(["symlinks -rvs /"])[0].split("\n")
+        default_symlink_list = DefaultPodman().executeCommand(["symlinks -rvs /"])[0].split("\n")
 
         for pkg in pkgs:
             name = os.path.basename(pkg)
             _subpkg = rename_default_subpkg(pkgsplit.get_subpackage_only(name))
             if _subpkg in subpackages_without_alternatives():
                 continue
-            if not DefaultMock().run_all_scriptlets_for_install(pkg):
+            if not DefaultPodman().run_all_scriptlets_for_install(pkg):
                 continue
 
             # iterating over all directories recursively (-r) and under all symlinks (-v)
-            symlinks_list = DefaultMock().executeCommand(["symlinks -rvs /"])
+            symlinks_list = DefaultPodman().executeCommand(["symlinks -rvs /"])
             symlinks_list = symlinks_list[0].split("\n")
             symlinks = diff(symlinks_list, default_symlink_list)
             symlink_dict[_subpkg] = self._symlink_parser(symlinks)

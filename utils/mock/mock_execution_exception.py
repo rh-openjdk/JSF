@@ -1,2 +1,0 @@
-class MockExecutionException(BaseException):
-    pass

@@ -29,7 +29,7 @@ class DynamicArches(metaclass=Singleton):
         self.power64 = None
 
     def getDynamicArches(self, arch):
-        la.LoggingAccess().log("Getting dynamic arches for: " + arch, vc.Verbosity.MOCK)
+        la.LoggingAccess().log("Getting dynamic arches for: " + arch, vc.Verbosity.PODMAN)
         output= rpmbuild_utils.rpmbuildEval(arch)
         li = output.split(" ")
         for i in range(len(li)):
