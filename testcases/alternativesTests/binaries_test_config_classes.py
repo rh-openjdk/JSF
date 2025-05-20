@@ -1,3 +1,5 @@
+import re
+
 import testcases.alternativesTests.binaries_test_methods as bsm
 import utils.pkg_name_split as ns
 import testcases.alternativesTests.binaries_test_paths as btp
@@ -122,11 +124,6 @@ class OpenJdk11(OpenJdk8):
                 dict[subpkg + suffix] = dict[subpkg]
         return dict
 
-    def _get_binary_directory_path(self, name):
-        for suffix in tc.get_debug_suffixes():
-            if suffix in name:
-                return tc.JVM_DIR + "/" + tu.get_32bit_id_in_nvra(ns.get_nvra(name)) + suffix + tc.SDK_DIRECTORY
-        return tc.JVM_DIR + "/" + tu.get_32bit_id_in_nvra(ns.get_nvra(name)) + tc.SDK_DIRECTORY
 
     def _check_binaries_against_hardcoded_list(self, binaries, subpackage):
         hardcoded_binaries = self._get_binaries_as_dict()
@@ -220,17 +217,30 @@ class OpenJdk11NoJhsdb(OpenJdk11):
 
 class OpenJdkLatest(OpenJdk11):
     DEFAULT_BINARIES = []
-    DEVEL_BINARIES = ['jar', 'jarsigner', 'javac', 'javadoc', 'javap', 'jcmd',
+    DEVEL_BINARIES = ['jar', 'jarsigner', 'javac', 'javadoc', 'javap',
                       'jconsole',
                       'jdb', 'jdeprscan', 'jdeps', 'jhsdb', 'jimage', 'jinfo', 'jlink', 'jmap', 'jmod', 'jps',
                       'jrunscript',
                       'jshell', 'jstack', 'jstat', 'jstatd', 'serialver', 'jfr', 'jpackage', 'jwebserver']
-    HEADLESS_BINARIES = ["java", "keytool", "rmiregistry"]
+    HEADLESS_BINARIES = ["java", "keytool", "rmiregistry", "alt-java", "jcmd"]
 
     def remove_binaries_without_slaves(self, args=None):
         subpackage = self._get_jre_subpackage()[0]
         if "devel" in subpackage:
             self.installed_binaries[subpackage].remove("jfr")
+
+    def _get_binary_directory_path(self, name):
+        return ns.get_jvm_dir_post_change(name)
+
+
+class OpenJdkLatestSemeru(OpenJdkLatest):
+    DEFAULT_BINARIES = []
+    DEVEL_BINARIES = ['jar', 'jarsigner', 'javac', 'javadoc', 'javap',
+                      'jconsole',
+                      'jdb', 'jdeprscan', 'jdeps', 'jimage', 'jlink', 'jmap', 'jmod', 'jps',
+                      'jrunscript',
+                      'jshell', 'jstack', 'jstat', 'serialver', 'jfr', 'jpackage', 'jwebserver']
+    HEADLESS_BINARIES = ["java", "keytool", "rmiregistry", "jcmd", "traceformat", "jitserver", "jdmpview", "jpackcore"]
 
 
 class OpenJdkLatestNoJhsdb(OpenJdkLatest):

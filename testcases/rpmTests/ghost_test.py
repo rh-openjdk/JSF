@@ -68,7 +68,7 @@ class Default(cs.JdkConfiguration):
             if not newghost.endswith(".rpmmoved"):
                 resolved_rpm_ghosts.add(tu.resolve_link(newghost))
         if "debug" in file:
-            tu.passed_or_failed(self, resolved_rpm_ghosts == self._get_hardcoded_ghosts(file),
+            tu.passed_or_failed(self, resolved_rpm_ghosts == set(),
                                 "Debug packages are not expected to have any ghosts. Found ghosts: " + str(
                                     resolved_rpm_ghosts))
             return
@@ -158,7 +158,7 @@ class OjdklatestJIT(Default):
                     break
             if arch == "i686" or arch == "armv7hl":
                 nvra = nvra.replace(arch, archinstall)
-            ghosts.add("/usr/lib/jvm/" + nvra + debugsuffix + "/lib/server/classes.jsa")
+            # ghosts.add("/usr/lib/jvm/" + nvra + debugsuffix + "/lib/server/classes.jsa")
         return ghosts
 
 

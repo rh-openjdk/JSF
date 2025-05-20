@@ -485,6 +485,9 @@ class PostinstallScriptTest(bt.BaseTest):
                     return
                 self.csch = ProprietaryJavaRhel8()
                 return
+        elif rpms.getVendor() == gc.IBM_SEMERU:
+            self.csch = OpenJdk21()
+            return
 
         elif rpms.getVendor() == gc.ORACLE or rpms.getVendor() == gc.SUN:
             if rpms.getMajorVersionSimplified() == "6":

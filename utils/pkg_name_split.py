@@ -2,7 +2,8 @@ import re
 from collections import namedtuple
 import config.global_config as gc
 import ntpath
-from collections import OrderedDict
+import utils.test_utils as tu
+import utils.test_constants as tc
 
 RpmNameParts = namedtuple('RpmNameParts',
                           ['java', 'java_ver', 'vendor', 'pkg',
@@ -30,6 +31,12 @@ def _hyphen_split(name):
         pkg = '-'.join(pkg)
         return [gc.ITW, gc.ITW, gc.ITW, pkg, version, whole_end]
     # rolling release is breaking everything, needs more checks, because it can break everything
+    if gc.IBM_SEMERU in name:
+        name = name.replace(gc.IBM_SEMERU, gc.IBM)
+        hyphen_parts = name.split('-')
+        java, java_ver, vendor, *pkg, version, whole_end = hyphen_parts
+        pkg = '-'.join(pkg)
+        return [java, java_ver, gc.IBM_SEMERU, pkg, version, whole_end]
     elif name.startswith("java-openjdk"):
         java, vendor, *pkg, version, whole_end = hyphen_parts
         pkg = '-'.join(pkg)
@@ -194,3 +201,29 @@ def drop_signature(rpm):
         return rpm.split("\t")[0]
     return rpm
 
+def get_jvm_dir(name):
+    dir_name_no_suffix = get_major_package_name(name)
+    distro = get_dist(name)
+    if "el" in distro:
+        if int(re.sub(r'\D', '', get_dist(name))[0]) < 10:
+            dir_name_no_suffix = tu.get_32bit_id_in_nvra(get_nvra(name))
+    for suffix in tc.get_debug_suffixes():
+        if suffix in name:
+            return dir_name_no_suffix + suffix
+    return dir_name_no_suffix
+
+
+def get_jvm_dir_pre_change(name):
+    dir_name_no_suffix = tu.get_32bit_id_in_nvra(get_nvra(name))
+    for suffix in tc.get_debug_suffixes():
+        if suffix in name:
+            return dir_name_no_suffix + suffix
+    return dir_name_no_suffix
+
+
+def get_jvm_dir_post_change(name):
+    dir_name_no_suffix = get_major_package_name(name)
+    for suffix in tc.get_debug_suffixes():
+        if suffix in name:
+            return dir_name_no_suffix + suffix
+    return dir_name_no_suffix

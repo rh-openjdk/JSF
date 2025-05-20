@@ -11,6 +11,7 @@ import utils.test_utils as tu
 import utils.core.configuration_specific as cs
 import config.runtime_config as rc
 import config.global_config as gc
+import utils.test_constants as tc
 
 
 class GenericScriptletCsch(cs.JdkConfiguration):
@@ -45,6 +46,20 @@ class GenericScriptletCsch(cs.JdkConfiguration):
 class TemurinScriptletCsch(GenericScriptletCsch):
     def _get_expected_scriptlets(self, pkg):
         return [rpmbu.POSTINSTALL, rpmbu.PREUNINSTALL]
+
+
+class SemeruSriptletCsch(GenericScriptletCsch):
+    def __init__(self):
+        super().__init__()
+        self.expected_scriptlets[tc.DEVEL].remove(rpmbu.POSTUNINSTALL)
+        self.expected_scriptlets[tc.DEVEL].remove(rpmbu.POSTTRANS)
+        self.expected_scriptlets[tc.DEVEL].append(rpmbu.PREUNINSTALL)
+        self.expected_scriptlets[tc.DEFAULT].remove(rpmbu.POSTINSTALL)
+        self.expected_scriptlets[tc.DEFAULT].remove(rpmbu.POSTUNINSTALL)
+        self.expected_scriptlets[tc.DEFAULT].remove(rpmbu.POSTTRANS)
+        self.expected_scriptlets[tc.HEADLESS].remove(rpmbu.PRETRANS)
+        self.expected_scriptlets[tc.HEADLESS].append(rpmbu.PREUNINSTALL)
+        self.expected_scriptlets[tc.HEADLESS].remove(rpmbu.PREUNINSTALL)
 
 
 class ScriptletTest(utils.core.base_xtest.BaseTest):
@@ -97,6 +112,8 @@ class ScriptletTest(utils.core.base_xtest.BaseTest):
         rpms = rc.RuntimeConfig().getRpmList()
         if rpms.getVendor() == gc.ADOPTIUM:
             self.csch = TemurinScriptletCsch()
+        elif rpms.getVendor() == gc.IBM and int(rpms.getMajorVersionSimplified()) >= 21:
+            self.csch = SemeruSriptletCsch()
         else:
             self.csch = GenericScriptletCsch()
         return

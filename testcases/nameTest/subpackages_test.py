@@ -444,7 +444,10 @@ class SubpackagesTest(utils.core.base_xtest.BaseTest):
                     return
             else:
                 raise ex.UnknownJavaVersionException("Ibm java version unknown.")
-        if rpms.getVendor() == gc.ADOPTIUM:
+        elif rpms.getVendor() == gc.IBM_SEMERU:
+            self.csch = OpenJdkLatest()
+            return
+        elif rpms.getVendor() == gc.ADOPTIUM:
             self.csch = BaseTemurinPackages()
             return
         raise ex.UnknownJavaVersionException("Java version or OS was not recognized by this framework.")

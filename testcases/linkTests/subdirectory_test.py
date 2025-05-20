@@ -1,6 +1,8 @@
 import os
 import sys
 import copy
+from asyncio import current_task
+
 import outputControl.logging_access as la
 import config.runtime_config as rc
 import utils.core.base_xtest as bt
@@ -36,8 +38,16 @@ class BaseMethods(JdkConfiguration):
         return get_32bit_id_in_nvra(pkgsplit.get_nvra(name))
 
     def _get_expected_subdirectories(self, name):
+        subdirs = {HEADLESS: ["jre",
+                              "jre" + "-" + self._get_major_version(),
+                              "jre" + "-" + self.rpms.getVendor(),
+                              "jre" + "-" + self._get_major_version() + "-" + self.rpms.getVendor(),
+                              ], DEVEL: ["java",
+                                         "java" + "-" + self._get_major_version(),
+                                         "java" + "-" + self.rpms.getVendor()
+                                         ], DEFAULT: []}
         """ Expected set of subdirectories"""
-        return {}
+        return subdirs
 
     def _get_jre_link(self, expected_link):
         """ Creating path to jre directory """
@@ -75,8 +85,15 @@ class BaseMethods(JdkConfiguration):
                 passed_or_failed(self, subdirectory in expected_subdirectories,
                                  "Extra {} subdirectory in {} subpackage".format(subdirectory, _subpkg))
 
+    def _get_jvm_dirname(self, name):
+        return pkgsplit.get_jvm_dir_pre_change(name)
+
     def _get_expected_link(self, name):
-        expected_link = JVM_DIR + "/" + self._get_nvra_suffix(name)
+        current_suffix = ""
+        for suffix in get_debug_suffixes():
+            if suffix in name:
+                current_suffix = suffix
+        expected_link = JVM_DIR + "/" + self._get_jvm_dirname(name) + current_suffix#self._get_nvra_suffix(name)
         return expected_link
 
     def _test_links_are_correct(self, subdirectories, name, _subpkg):
@@ -141,42 +158,58 @@ class BaseMethods(JdkConfiguration):
 # here follow configuration classes, determining the unique set of subdirectories for each class
 class OpenJdk8(BaseMethods):
     def _get_expected_subdirectories(self, name):
-        subdirs = {HEADLESS: ["jre",
-                             "jre" + "-" + self._get_major_version(),
-                             "jre" + "-" + self.rpms.getVendor(),
-                             "jre" + "-" + self._get_major_version() + "-" + self.rpms.getVendor(),
-                             ],
-                   DEVEL: ["java",
-                           "java" + "-" + self._get_major_version(),
-                           "java" + "-" + self.rpms.getVendor(),
-                           "java" + "-" + self._get_major_version() + "-" + self.rpms.getVendor(),
-                           ]}
-        subdirs[HEADLESS].append(self._get_nvra_suffix(name).replace("java", "jre", 1))
-        subdirs[DEFAULT] = []
+        subdirs = super()._get_expected_subdirectories(name)
+        subdirs[DEVEL].append("java" + "-" + self._get_major_version() + "-" + self.rpms.getVendor())
+        #subdirs[HEADLESS].append(self._get_main_subdir(name))
         for suffix in get_debug_suffixes():
             for subpkg in [HEADLESS, DEFAULT, DEVEL]:
                 subdirs[subpkg + suffix] = copy.copy(subdirs[subpkg])
-        for pkg in subdirs.keys():
-            subdirs[pkg].append(self._get_nvra_suffix(name))
+                subdirs[subpkg + suffix].append(self._get_jvm_dirname(name) + suffix)
+            subdirs[HEADLESS + suffix].append(self._get_jvm_dirname(name).replace("java", "jre") + suffix)
+            subdirs[DEVEL + suffix].append(self._get_jvm_dirname(name) + suffix)
+        for subpkg in [HEADLESS, DEFAULT, DEVEL]:
+            subdirs[subpkg].append(self._get_jvm_dirname(name))
+        subdirs[HEADLESS].append(self._get_jvm_dirname(name).replace("java", "jre"))
+        subdirs[DEVEL].append(self._get_jvm_dirname(name))
         return subdirs
 
     def _get_nvra_suffix(self, name):
-        directory = pkgsplit.get_nvra(name)
+        directory = pkgsplit.get_name_version_release(name)
         for suffix in get_debug_suffixes():
             if suffix in name:
-                directory = directory + suffix
+                directory =  pkgsplit.get_major_package_name(name) + suffix + directory.replace(pkgsplit.get_major_package_name(name), "")
                 break
         return directory.replace("i686", "i386").replace("armv7hl", "arm")
 
     def _get_jre_link(self, expected_link):
         return super()._get_jre_link(expected_link).replace("i686", "i386")
 
+    def _get_main_subdir(self, name):
+        return self._get_nvra_suffix(name)
+
+    def _get_jvm_dirname(self, name):
+        return pkgsplit.get_nvra(name)
+
 
 class OpenJdk11(OpenJdk8):
     def _get_jre_link(self, expected_link):
         return expected_link.replace("i686", "i386")
 
+    # post change of nvra-full jvmdir to just nv jvmdir
+class OpenJdkLatestPostChange(OpenJdk11):
+    def _get_expected_subdirectories(self, name):
+        subdirs = super()._get_expected_subdirectories(name)
+        #subdirs[DEVEL].append("java" + "-" + self._get_major_version() + "-" + self.rpms.getVendor())
+        for suffix in list(get_debug_suffixes()) + [""]:
+            subdirs[DEVEL + suffix].remove("java" + "-" + self._get_major_version() + "-" + self.rpms.getVendor())
+            subdirs[HEADLESS + suffix].remove("jre" + "-" + self._get_major_version() + "-" + self.rpms.getVendor() + suffix)
+        return subdirs
 
+    def _get_jvm_dirname(self, name):
+        return pkgsplit.get_major_package_name(name)
+
+    def _get_main_subdir(self, name):
+        return "java" + "-" + self._get_major_version() + "-" + self.rpms.getVendor()
 class Temurin(OpenJdk11):
     def _get_expected_subdirectories(self, name):
         subdirs = {JRE: ["-".join([gc.TEMURIN, self.rpms.getMajorVersionSimplified(), JRE])],
@@ -272,8 +305,11 @@ class SubdirectoryTest(bt.BaseTest):
             if int(rpms.getMajorVersionSimplified()) == 8:
                 self.csch = OpenJdk8()
                 return
-            else:
+            elif int(rpms.getOsVersionMajor()) <= 9 and rpms.getOs() == gc.RHEL:
                 self.csch = OpenJdk11()
+                return
+            else:
+                self.csch = OpenJdkLatestPostChange()
                 return
         elif rpms.getVendor() == gc.ORACLE:
             self.csch = Oracle7()
@@ -291,6 +327,9 @@ class SubdirectoryTest(bt.BaseTest):
             else:
                 self.csch = Ibm8Rhel8()
                 return
+        elif rpms.getVendor() == gc.IBM_SEMERU:
+            self.csch = OpenJdkLatestPostChange()
+            return
 
         elif rpms.getVendor() == gc.ITW:
             self.csch = ITW()

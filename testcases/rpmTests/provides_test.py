@@ -238,28 +238,6 @@ class ProvidesTest(bt.BaseTest):
             self.csch = Temurin(ProvidesTest.instance)
             return
         else:
-            arch = self.getCurrentArch()
-            if int(rpms.getMajorVersionSimplified()) == 8:
-                if tc.is_arch_jitarch(arch) and "ppc" not in arch:
-                    self.csch = NonITW(ProvidesTest.instance)
-                    return
-                else:
-                    self.csch = NonITW(ProvidesTest.instance)
-                    return
-            if int(rpms.getMajorVersionSimplified()) == 11:
-                if (arch in ["armv7hl", "s390x"] or tc.is_arch_jitarch(arch)) and "ppc" not in arch:
-                    self.csch = NonITW(ProvidesTest.instance)
-                    return
-                else:
-                    self.csch = NonITW(ProvidesTest.instance)
-                    return
-            if int(rpms.getMajorVersionSimplified()) > 11:
-                if (arch in ["armv7hl", "s390x"] or tc.is_arch_jitarch(arch)) and "ppc" not in arch:
-                    self.csch = NonITW(ProvidesTest.instance)
-                    return
-                else:
-                    self.csch = NonITW(ProvidesTest.instance)
-
             self.log("Set OthersVersionCheck")
             self.csch = NonITW(ProvidesTest.instance)
             return

@@ -49,16 +49,6 @@ class BaseTest(JdkConfiguration):
     def _get_sdk_debug_subpackage(self):
         return [DEVEL + suffix for suffix in get_debug_suffixes()]
 
-    def _get_binary_directory_path(self, name):
-        d = JVM_DIR + "/" + self._get_binary_directory(name)
-        for suffix in get_debug_suffixes():
-            if suffix + "-" in name:
-                d += suffix
-        if DEVEL in name or JAVAFX in name:
-            return d + SDK_DIRECTORY
-        else:
-            return d + JRE_DIRECTORY
-
     def _check_binaries_against_harcoded_list(self, binaries, subpackage):
         return
 
@@ -151,7 +141,7 @@ class PathTest(BaseTest):
     def _get_paths(self):
         paths = DefaultPodman().executeCommand(['printenv PATH'])
         if paths[1] != 0:
-            raise PodmanExecutionException("Command echo $PATH failed.")
+            raise PodmanExecutionException("Command \"printenv PATH\" failed.")
         paths = paths[0].split(os.pathsep)
         return paths
 

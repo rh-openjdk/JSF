@@ -52,7 +52,7 @@ class FileTest(bt.BaseTest):
     def setCSCH(self):
         rpms = rc.RuntimeConfig().getRpmList()
         rpms.getMajorPackage()
-        if (rpms.getVendor() == gc.OPENJDK or rpms.getVendor() == gc.OPENJ9) and int(rpms.getMajorVersionSimplified()) >= 11:
+        if (rpms.getVendor() == gc.OPENJDK or rpms.getVendor() == gc.OPENJ9 or rpms.getVendor() == gc.IBM_SEMERU) and int(rpms.getMajorVersionSimplified()) >= 11:
             self.csch = Ojdk11AndAbove(rpms)
         else:
             self.csch = Default(rpms)

@@ -21,6 +21,9 @@ PREFIX_170 = "170"
 PREFIX_180 = "180"
 PREFIX_190 = "190"
 PREFIX_1100 = "1100"
+PREFIX_210 = "210"
+PREFIX_1700 = "1700"
+PREFIX_2100 = "2100"
 LEN_4 = 4
 LEN_5 = 5
 LEN_6 = 6
@@ -165,6 +168,19 @@ class OpenJdk11(MajorCheck):
     def __init__(self):
         super().__init__(LEN_8, PREFIX_1100)
 
+class OpenJdk17System(MajorCheck):
+    def __init__(self):
+        super().__init__(LEN_8, PREFIX_1700)
+
+class OpenJdk21System(MajorCheck):
+    def __init__(self):
+        super().__init__(LEN_8, PREFIX_2100)
+
+
+class Semeru(MajorCheck):
+    def __init__(self):
+        super().__init__(LEN_6, PREFIX_210)
+
 
 class NonSystemJDK(MajorCheck):
     def __init__(self):
@@ -224,8 +240,16 @@ class PriorityCheck(utils.core.base_xtest.BaseTest):
             if rpms.is_system_jdk():
                 if rpms.getMajorVersionSimplified() == "8":
                     self.csch = OpenJdk8()
-                else:
+                    return
+                elif rpms.getMajorVersionSimplified() == "11":
                     self.csch = OpenJdk11()
+                    return
+                elif rpms.getMajorVersionSimplified() == "17":
+                    self.csch = OpenJdk17System()
+                    return
+                else:
+                    self.csch = OpenJdk21System()
+                    return
             else:
                 self.csch = NonSystemJDK()
         elif rpms.getVendor() == gc.SUN:
@@ -243,6 +267,9 @@ class PriorityCheck(utils.core.base_xtest.BaseTest):
                 return
             else:
                 raise ex.UnknownJavaVersionException("Unknown " + rpms.getVendor() + " version.")
+        elif rpms.getVendor() == gc.IBM_SEMERU:
+            self.csch = Semeru()
+            return
         elif rpms.getVendor() == gc.ITW:
             self.csch = IcedTeaWeb()
             return

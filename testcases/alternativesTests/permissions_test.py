@@ -6,6 +6,7 @@ import config.global_config as gc
 import config.runtime_config as rc
 import utils
 import config.verbosity_config as vc
+from testcases.linkTests.subdirectory_test import OpenJdkLatestPostChange
 from utils.podman.podman_executor import DefaultPodman
 from utils.test_utils import rename_default_subpkg, get_arch, two_lists_diff, get_32bit_id_in_nvra,\
     passed_or_failed
@@ -31,13 +32,14 @@ class BaseTest(JdkConfiguration):
         self.invalid_file_candidates = []
 
     def _get_target_java_directory(self, name):
-        """Returns a directory where jdk is installed (mostly name-version-release-arch)."""
+        return pkgsplit.get_jvm_dir_pre_change(name)
+        """Returns a directory where jdk is installed (mostly name-version-release-arch).
         directory =  get_32bit_id_in_nvra(pkgsplit.get_nvra(name))
         for suffix in get_debug_suffixes():
             if suffix in name:
                 directory = directory + suffix
                 break
-        return directory
+        return directory"""
 
     def _skipped_subpackages(self):
         """We might want to skip the subpackages that have post install, but do not add any files into jvm directory."""
@@ -264,6 +266,11 @@ class OpenJdk8(BaseTest):
         directory = super()._get_target_java_directory(name)
         return directory
 
+    # post change of nvra-full jvmdir to just nv jvmdir
+class OpenJdkPostChange(OpenJdk8):
+    def _get_target_java_directory(self, name):
+        return pkgsplit.get_jvm_dir_post_change(name)
+
 
 class Oracle(BaseTest):
     pass
@@ -284,17 +291,28 @@ class PermissionTest(bt.BaseTest):
             if rpms.getMajorVersionSimplified() == "8":
                 self.csch = OpenJdk8()
                 return
-            elif int(rpms.getMajorVersionSimplified()) >= 9:
-                self.csch = OpenJdk8()
-                return
+            elif int(rpms.getMajorVersionSimplified()) >= 17:
+                if rpms.getOs() == gc.RHEL and int(rpms.getOsVersionMajor()) <=9:
+                    self.csch = OpenJdk8()
+                    return
+                else:
+                    self.csch = OpenJdkPostChange()
+                    return
             else:
                 raise UnknownJavaVersionException("Unknown version of OpenJDK.")
-        if rpms.getVendor() == gc.ORACLE:
+        elif rpms.getVendor() == gc.ORACLE:
             self.csch = Oracle()
             return
 
-        if rpms.getVendor() == gc.IBM:
-            self.csch = BaseTest()
+        elif rpms.getVendor() == gc.IBM:
+            if int(rpms.getMajorVersionSimplified()) <= 8:
+                self.csch = BaseTest()
+                return
+            else:
+                self.csch = OpenJdk8()
+                return
+        elif rpms.getVendor() == gc.IBM_SEMERU:
+            self.csch = OpenJdkPostChange()
             return
 
         if rpms.getVendor() == gc.ITW:
