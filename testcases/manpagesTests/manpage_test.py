@@ -18,7 +18,7 @@ import utils.pkg_name_split as ns
 
 
 MANPAGE_SUFFIX = ".1.gz"
-TEMURIN_MANPAGE_SUFFIX = ".1"
+UNCOMPRESSED_MANPAGE_SUFFIX = ".1"
 SUBPACKAGE = "subpackage"
 MANPAGE = "Man page"
 SDK_BINARIES = "SDK binaries"
@@ -295,11 +295,15 @@ class OpenJdk8(ManpageTestMethods):
         return subpkgs
 
     def _get_manpage_suffixes(self, subpackage):
+        manpage_middle_part = self.rpms.getMajorPackage()
+        if "el" in self.rpms.getOs():
+            if int(self.rpms.getOsVersionMajor()) < 10:
+                manpage_middle_part = self.rpms.getNvr() + "." + self._get_arch()
         for suffix in list(tc.get_debug_suffixes()) + [""]:
             if suffix in subpackage:
-                return [MANPAGE_SUFFIX, "-" + self.rpms.getNvr() + "." + self._get_arch() + suffix + MANPAGE_SUFFIX]
+                return [MANPAGE_SUFFIX, "-" + manpage_middle_part + suffix + MANPAGE_SUFFIX]
         else:
-            return [MANPAGE_SUFFIX, "-" + self.rpms.getNvr() + "." + self._get_arch() + MANPAGE_SUFFIX]
+            return [MANPAGE_SUFFIX, "-" + manpage_middle_part + MANPAGE_SUFFIX]
 
     def _clean_up_binaries(self, binaries, master, usr_bin):
         if master == tc.JAVA:
@@ -359,6 +363,17 @@ class OpenJdk11JfrArchs(OpenJdk11):
 
 class OpenJdk17(OpenJdk11):
     pass
+
+class OpenJdk21Semeru(OpenJdk17):
+    def __init__(self):
+        super().__init__()
+        self.checked_subpackages = [tc.DEVEL, tc.HEADLESS]
+        self.missing_manpages[tc.DEVEL] = ["jmap", "jstack", "jps", "jstat", "jimage"]
+        self.missing_manpages[tc.HEADLESS] = ["jcmd", "jdmpview", "jitserver", "jpackcore", "traceformat"]
+
+    def _get_manpage_suffixes(self, subpackage):
+        manpage_middle_part = self.rpms.getMajorPackage()
+        return [MANPAGE_SUFFIX, "-" + manpage_middle_part + UNCOMPRESSED_MANPAGE_SUFFIX]
 
 
 class OpenJdk17s390x(OpenJdk17):
@@ -510,7 +525,7 @@ class Temurin8(ManpageTestMethods):
         return bins
 
     def _get_manpage_suffixes(self, subpackage):
-        return [TEMURIN_MANPAGE_SUFFIX, TEMURIN_MANPAGE_SUFFIX]
+        return [UNCOMPRESSED_MANPAGE_SUFFIX, UNCOMPRESSED_MANPAGE_SUFFIX]
 
     def manpage_file_check(self, bins, subpackage=None, plugin_bin_content=None, manpages_without_postscript=None):
         """
@@ -607,7 +622,11 @@ class ManpageTests(bt.BaseTest):
                 raise ex.UnknownJavaVersionException("Unknown java version.")
 
         elif rpms.getVendor() == gc.IBM:
-            self.csch = Ibm()
+            if int(rpms.getOsVersionMajor()) <= 8:
+                self.csch = Ibm()
+                return
+        elif rpms.getVendor() == gc.IBM_SEMERU:
+            self.csch = OpenJdk21Semeru()
             return
         elif rpms.getVendor() == gc.ADOPTIUM:
             if int(rpms.getMajorVersionSimplified()) == 8:

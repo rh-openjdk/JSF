@@ -5,7 +5,7 @@ import config.global_config
 import config.runtime_config
 import outputControl.logging_access as la
 import utils.process_utils
-import utils.test_utils
+import utils.test_utils as tu
 import utils.test_constants as tc
 import config.verbosity_config as vc
 import config.global_config as gc
@@ -16,15 +16,15 @@ class RpmList:
     , get srpm and so on"""
 
     def __init__(self, ddir):
-        self.files = utils.test_utils.get_rpms(ddir)
-        self.topDirs = utils.test_utils.get_top_dirs(ddir)
+        self.files = tu.get_rpms(ddir)
+        self.topDirs = tu.get_top_dirs(ddir)
         self.names = []
         for file in self.files:
             name = ntpath.basename(file)
             for part in tc.IGNOREDNAMEPARTS:
                 name = name.replace(part, "")
             self.names.append(name)
-        allFiles = utils.test_utils.get_files(ddir)
+        allFiles = tu.get_files(ddir)
         la.LoggingAccess().log("Loaded list of " + str(len(self.files)) + " rpms from  directory " + ddir,
                                vc.Verbosity.TEST)
         if len(self.files) != len(allFiles):
@@ -119,7 +119,7 @@ class RpmList:
 
     def getNativeArches(self):
         if config.runtime_config.RuntimeConfig().getArchs() is not None:
-            return set(utils.test_utils.removeNoarchSrpmArch(config.runtime_config.RuntimeConfig().getArchs()))
+            return set(tu.removeNoarchSrpmArch(config.runtime_config.RuntimeConfig().getArchs()))
         pset, props = self.getSetProperty(ns.get_arch)
         return pset - set(config.global_config.getNoarch()) - set(config.global_config.getSrcrpmArch())
 
@@ -181,7 +181,7 @@ class RpmList:
         if self.isFedora():
             return self.getDist()[2:]
         if self.isRhel():
-            return str(self.getDist()[2]).replace("_",".")
+            return str(self.getDist()[2:]).replace("_",".")
         if self.isEpel():
             return str(self.getDist()[4:]).replace("_",".")
         return "unspecified"
@@ -190,7 +190,7 @@ class RpmList:
         os = self.getOsVersion()
         version = gc.UNSPECIFIED
         if os is not gc.UNSPECIFIED:
-            version = int(re.sub("\..*","", os))
+            version = int(re.sub(r"\..*","", os))
         return version
 
     def getRpmWholeName(self, pkg, arch):
@@ -205,17 +205,22 @@ class RpmList:
 
     def is_system_jdk(self):
         if isFedora(self.getDist()):
-            if int(self.getOsVersion()) >= 33:
+            if int(self.getOsVersionMajor()) >= 40:
+                return int(self.getMajorVersionSimplified()) == 21
+            elif int(self.getOsVersionMajor()) >= 33:
                 return int(self.getMajorVersionSimplified()) == 11
             else:
                 return int(self.getMajorVersionSimplified()) == 8
         elif self.getVendor() == gc.ADOPTIUM:
             return False
         else:
-            if int(self.getOsVersion()) <= 8:
+            if int(self.getOsVersionMajor()) <= 8:
                 return int(self.getMajorVersionSimplified()) == 8
+            elif int(self.getOsVersionMajor()) == 9:
+                return int(self.getMajorVersionSimplified()) == 17
             else:
-                return int(self.getMajorVersionSimplified()) == 11
+                return int(self.getMajorVersionSimplified()) == 21
+
 
 
 def isFedora(dist):
@@ -240,3 +245,5 @@ def getOs(dist):
     if isRhel(dist) or isEpel(dist):
         return config.global_config.RHEL
     return None
+
+
