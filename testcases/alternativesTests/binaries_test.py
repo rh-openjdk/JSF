@@ -140,6 +140,9 @@ class BinariesTest(bt.BaseTest):
                     return
             else:
                 raise ex.UnknownJavaVersionException("Unknown IBM java version.")
+        elif rpms.getVendor() == gc.IBM_SEMERU:
+            self.csch = tcc.OpenJdkLatestSemeru(BinariesTest.instance)
+            return
 
         elif rpms.getVendor() == gc.ORACLE or rpms.getVendor() == gc.SUN:
             if rpms.getMajorVersionSimplified() == "6":
