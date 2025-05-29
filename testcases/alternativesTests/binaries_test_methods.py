@@ -106,8 +106,7 @@ class GetAllBinariesAndSlaves(btp.PathTest):
                 continue
             if not mexe.DefaultPodman().run_all_scriptlets_for_install(pkg):
                 self.binaries_test.log("Failed to execute postinstall. Slaves will not be found for " + _subpkg)
-            # binary_directory_path = JVM_DIR + "/" + pkgsplit.get_jvm_dir(name) + "/bin"
-            binary_directory_path = JVM_DIR + "/" + self._get_binary_directory_path(name) + "/bin"
+            binary_directory_path = self._get_binary_directory_path(name) + "/bin"
             binaries = mexe.DefaultPodman().execute_ls(binary_directory_path)
 
             if binaries[1] != 0:
@@ -127,7 +126,7 @@ class GetAllBinariesAndSlaves(btp.PathTest):
         return self.installed_binaries, self.installed_slaves
 
     def _get_binary_directory_path(self, name):
-        return pkgsplit.get_jvm_dir_pre_change(name)
+        return JVM_DIR + "/" + pkgsplit.get_jvm_dir_pre_change(name)
 
 
 

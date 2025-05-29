@@ -229,7 +229,7 @@ class OpenJdkLatest(OpenJdk11):
         if "devel" in subpackage:
             self.installed_binaries[subpackage].remove("jfr")
 
-    def _get_binary_directory_path(self, name):
+    def _get_binary_directory_name(self, name):
         return ns.get_jvm_dir_post_change(name)
 
 
@@ -501,7 +501,7 @@ class Itw(bsm.BinarySlaveTestMethods):
             tu.passed_or_failed(self, False, settings + " binary not in " + tc.DEFAULT + " subpackage")
         return installed_binaries, installed_slaves
     
-    def _get_binary_directory_path(self, name):
+    def _get_binary_directory_name(self, name):
         return tc.USR_BIN
 
     def _get_checked_masters(self):
@@ -533,7 +533,7 @@ class Temurin8(bsm.BinarySlaveTestMethods):
     def _get_subpackages_with_binaries(self):
         return [tc.JRE, tc.JDK]
 
-    def _get_binary_directory_path(self, name):
+    def _get_binary_directory_name(self, name):
         return tc.JVM_DIR + "/{}/bin".format(ns.get_package_name(name))
 
     def _get_jre_subpackage(self):
