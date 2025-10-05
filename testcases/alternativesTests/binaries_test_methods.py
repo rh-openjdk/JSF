@@ -126,7 +126,11 @@ class GetAllBinariesAndSlaves(btp.PathTest):
         return self.installed_binaries, self.installed_slaves
 
     def _get_binary_directory_path(self, name):
-        return JVM_DIR + "/" + pkgsplit.get_jvm_dir_pre_change(name)
+        binary_dir_path = JVM_DIR + "/" + pkgsplit.get_jvm_dir_pre_change(name)
+        _subpkg = tu.rename_default_subpkg(pkgsplit.get_subpackage_only(name))
+        if "headless" in _subpkg or "default" in _subpkg :
+            binary_dir_path += "/jre"
+        return binary_dir_path
 
 
 
@@ -155,6 +159,7 @@ class BinarySlaveTestMethods(GetAllBinariesAndSlaves):
                 except KeyError:
                     la.LoggingAccess().log("Subpkg " + current_subpkg + " not containing binaries and is probably "
                                                                         "missing. This is being reported in subpkg test.")
+                    continue
                 for j in jre:
                     try:
                         sdk.remove(j)
