@@ -296,7 +296,7 @@ class OpenJdk8(ManpageTestMethods):
 
     def _get_manpage_suffixes(self, subpackage):
         manpage_middle_part = self.rpms.getMajorPackage()
-        if "el" in self.rpms.getOs():
+        if "el" in self.rpms.getOs().lower():
             if int(self.rpms.getOsVersionMajor()) < 10:
                 manpage_middle_part = self.rpms.getNvr() + "." + self._get_arch()
         for suffix in list(tc.get_debug_suffixes()) + [""]:
