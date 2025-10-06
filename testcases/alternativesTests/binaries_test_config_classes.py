@@ -7,6 +7,7 @@ import utils.test_constants as tc
 import utils.test_utils as tu
 import utils.podman.podman_executor as mexe
 import outputControl.logging_access as la
+from utils.test_constants import JVM_DIR
 
 # This script should contain only configuration specific implemetation of the method and overriden methods code.
 # Default methods should be always placed in methods or paths files.
@@ -192,6 +193,11 @@ class OpenJdk11(OpenJdk8):
                 subpackages.remove(pkg)
         return subpackages
 
+    def _get_binary_directory_path(self, name):
+        binary_dir_path = JVM_DIR + "/" + ns.get_jvm_dir_pre_change(name)
+        _subpkg = tu.rename_default_subpkg(ns.get_subpackage_only(name))
+        return binary_dir_path
+
 
 class OpenJdk11x64(OpenJdk11):
     DEFAULT_BINARIES = []
@@ -221,7 +227,7 @@ class OpenJdkLatest(OpenJdk11):
                       'jconsole',
                       'jdb', 'jdeprscan', 'jdeps', 'jhsdb', 'jimage', 'jinfo', 'jlink', 'jmap', 'jmod', 'jps',
                       'jrunscript',
-                      'jshell', 'jstack', 'jstat', 'jstatd', 'serialver', 'jfr', 'jpackage', 'jwebserver']
+                      'jshell', 'jstack', 'jstat', 'jstatd', 'serialver', 'jfr', 'jpackage']
     HEADLESS_BINARIES = ["java", "keytool", "rmiregistry", "alt-java", "jcmd"]
 
     def remove_binaries_without_slaves(self, args=None):
@@ -245,12 +251,12 @@ class OpenJdkLatestSemeru(OpenJdkLatest):
 
 class OpenJdkLatestNoJhsdb(OpenJdkLatest):
     DEFAULT_BINARIES = []
-    DEVEL_BINARIES = ['jar', 'jarsigner', 'javac', 'javadoc', 'javap', 'jcmd',
+    DEVEL_BINARIES = ['jar', 'jarsigner', 'javac', 'javadoc', 'javap',
                       'jconsole',
                       'jdb', 'jdeprscan', 'jdeps', 'jimage', 'jinfo', 'jlink', 'jmap', 'jmod', 'jps',
                       'jrunscript',
                       'jshell', 'jstack', 'jstat', 'jstatd', 'serialver', 'jfr', 'jpackage']
-    HEADLESS_BINARIES = ["java", "keytool", "rmiregistry", 'alt-java']
+    HEADLESS_BINARIES = ["java", "keytool", "rmiregistry", 'alt-java', 'jcmd']
 
 
 class Ibm(bsm.BinarySlaveTestMethods):
