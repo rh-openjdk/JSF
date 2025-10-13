@@ -166,6 +166,7 @@ class BinarySlaveTestMethods(GetAllBinariesAndSlaves):
                         tu.passed_or_failed(self, True, "")
                     except ValueError:
                         tu.passed_or_failed(self, False, "Binary " + j + " is present in JRE, but is missing in SDK.")
+                self.installed_binaries[current_subpkg] = sdk
         return
 
     def _extract_suffix_from_subpkg(self, subpkg):
