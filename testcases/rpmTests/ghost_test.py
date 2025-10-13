@@ -1,4 +1,6 @@
 import sys
+from email.policy import default
+
 import utils.pkg_name_split as ns
 import utils.test_utils as tu
 import outputControl.logging_access as la
@@ -40,9 +42,18 @@ class Default(cs.JdkConfiguration):
     def __init__(self):
         super().__init__()
         self.expected_ghosts = {}
+    # policytool binary resides in headless package, but ghosts are only in default package
+    def _handle_policy_tool(self, expected_ghosts):
+        for ghost in expected_ghosts.copy().keys():
+            if "policytool" in ghost:
+                del expected_ghosts[ghost]
+        return expected_ghosts
+
+
 
     def _get_hardcoded_ghosts(self, file):
         return set()
+
 
     def ghost_test(self, this):
         documentation = "This tests checks if every master is ghosted. Ghosted files are listed via rpm command," \
@@ -57,33 +68,43 @@ class Default(cs.JdkConfiguration):
         return self.passed, self.failed
 
     def _check_ghosts_per_file(self, file):
-        rpm_ghosts = self._get_actual_ghosts(file)
         default_masters = set(mexe.DefaultPodman().get_default_masters())
         mexe.DefaultPodman().run_all_scriptlets_for_install("rpms/" + file)
-        resolved_rpm_ghosts = set()
-        for ghost in rpm_ghosts:
-            newghost = ghost.replace("\n", "")
-            # skipping rpmmoved ghosts - those are only for removed/moved directories so that user doesnt loose data upon upgrade
-            if not newghost.endswith(".rpmmoved"):
-                resolved_rpm_ghosts.add(tu.resolve_link(newghost))
         expected_master_ghosts = set()
         expected_follower_ghosts = set()
         if rc.RuntimeConfig().getRpmList().is_system_jdk():
             expected_master_ghosts = set(mexe.DefaultPodman().get_masters()).difference(default_masters)
             for master in expected_master_ghosts.copy():
                 expected_follower_ghosts = expected_follower_ghosts.union(set(mexe.DefaultPodman().get_slaves_with_links(master).values()))
-        resolved_actual_ghosts = {}
+
+        resolved_expected_ghosts = {}
         for ghost in expected_master_ghosts:
             resolved_ghost = tu.resolve_link(mexe.DefaultPodman().get_target(ghost))
-            resolved_actual_ghosts[resolved_ghost] = ghost
+            resolved_expected_ghosts[resolved_ghost] = ghost
         for ghost in expected_follower_ghosts:
             if ghost.startswith("/usr/lib/jvm/"):
-                resolved_actual_ghosts[ghost] = "follower"
+                resolved_expected_ghosts[ghost] = "follower"
         for ghost in self._get_hardcoded_ghosts(file):
-            resolved_actual_ghosts[ghost] = "hardcoded"
-        if not tu.passed_or_failed(self, set(resolved_actual_ghosts.keys()) == resolved_rpm_ghosts, "Sets of ghost are not correct for " + file + ". Differences will follow."):
-            missing_ghosts = set(resolved_actual_ghosts.keys()).difference(resolved_rpm_ghosts)
-            extra_ghosts = resolved_rpm_ghosts.difference(set(resolved_actual_ghosts.keys()))
+            resolved_expected_ghosts[ghost] = "hardcoded"
+
+        rpm_ghosts = self._get_actual_ghosts(file)
+        resolved_rpm_ghosts = set()
+        for ghost in rpm_ghosts:
+            newghost = ghost.replace("\n", "")
+            # skipping rpmmoved ghosts - those are only for removed/moved directories so that user doesnt loose data upon upgrade
+            if not newghost.endswith(".rpmmoved"):
+                resolved_rpm_ghosts.add(tu.resolve_link(newghost))
+        if "debug" in file:
+            tu.passed_or_failed(self, resolved_rpm_ghosts == self._get_hardcoded_ghosts(file),
+                                "Debug packages are not expected to have any ghosts except for the hardcoded ones. Found ghosts: " + str(
+                                    resolved_rpm_ghosts))
+
+            return
+        if "headless" in file:
+            resolved_expected_ghosts = self._handle_policy_tool(resolved_expected_ghosts)
+        if not tu.passed_or_failed(self, set(resolved_expected_ghosts.keys()) == resolved_rpm_ghosts, "Sets of ghost are not correct for " + file + ". Differences will follow."):
+            missing_ghosts = set(resolved_expected_ghosts.keys()).difference(resolved_rpm_ghosts)
+            extra_ghosts = resolved_rpm_ghosts.difference(set(resolved_expected_ghosts.keys()))
             missing_ghosts_masters = []
             for ghost in missing_ghosts:
                 missing_ghosts_masters.append(ghost)
@@ -101,25 +122,34 @@ class Default(cs.JdkConfiguration):
         return ghosts
 
 
-class Ojdk8NonJIT(Default):
+class Ojdk8Common(Default):
     def _get_hardcoded_ghosts(self, file):
-        ghosts = super(Ojdk8NonJIT, self)._get_hardcoded_ghosts(file)
+        ghosts = super(Ojdk8Common, self)._get_hardcoded_ghosts(file)
+        if ns.get_subpackage_only(file) == "":
+            ghosts.add("/usr/bin/policytool")
         return ghosts
 
 
-class Ojdk8JIT(Default):
+class Ojdk8NonJIT(Ojdk8Common):
+    pass
+
+
+class Ojdk8JIT(Ojdk8Common):
     def _get_hardcoded_ghosts(self, file):
         ghosts = super(Ojdk8JIT, self)._get_hardcoded_ghosts(file)
+        arch = ns.get_arch(file)
         if "headless" in file and not "info" in file:
-            name = ns.get_major_package_name(file)
+            nvra = ns.get_nvra(file)
             archinstall = ns.get_arch_install(file)
             debugsuffix = ""
             for suffix in tc.get_debug_suffixes():
                 if suffix in file:
                     debugsuffix = suffix
                     break
-            ghosts.add("/usr/lib/jvm/" + name + debugsuffix + "/jre/lib/" + archinstall + "/client/classes.jsa")
-            ghosts.add("/usr/lib/jvm/" + name + debugsuffix + "/jre/lib/" + archinstall + "/server/classes.jsa")
+            if arch == "i686":
+                nvra = nvra.replace(arch, archinstall)
+            ghosts.add("/usr/lib/jvm/" + nvra + debugsuffix + "/jre/lib/" + archinstall + "/client/classes.jsa")
+            ghosts.add("/usr/lib/jvm/" + nvra + debugsuffix + "/jre/lib/" + archinstall + "/server/classes.jsa")
         return ghosts
 
 
