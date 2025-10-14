@@ -108,13 +108,13 @@ class OpenJdk8NoExportsJfx(OpenJdk8Jfx):
 
 class OpenJdk11(OpenJdk8):
     DEFAULT_BINARIES = []
-    DEVEL_BINARIES = ['jar', 'jarsigner', 'javac', 'javadoc', 'javap', 'jcmd',
+    DEVEL_BINARIES = ['jar', 'jarsigner', 'javac', 'javadoc', 'javap',
                       'jconsole',
                       'jdb', 'jdeprscan', 'jdeps', 'jhsdb', 'jimage', 'jinfo', 'jlink', 'jmap', 'jmod', 'jps',
                       'jrunscript',
                       'jshell', 'jstack', 'jstat', 'jstatd', 'rmic', 'serialver', "jfr"]
     HEADLESS_BINARIES = ["java", "jjs", "keytool", "pack200",
-                         "rmid", "rmiregistry", "unpack200", 'alt-java']
+                         "rmid", "rmiregistry", "unpack200", 'alt-java', 'jcmd']
 
     def _get_binaries_as_dict(self):
         dict = {tc.DEFAULT: self.DEFAULT_BINARIES,
@@ -201,24 +201,24 @@ class OpenJdk11(OpenJdk8):
 
 class OpenJdk11x64(OpenJdk11):
     DEFAULT_BINARIES = []
-    DEVEL_BINARIES = ['jar', 'jaotc', 'jarsigner', 'javac', 'javadoc', 'javap', 'jcmd',
+    DEVEL_BINARIES = ['jar', 'jaotc', 'jarsigner', 'javac', 'javadoc', 'javap',
                       'jconsole',
                       'jdb', 'jdeprscan', 'jdeps', 'jhsdb', 'jimage', 'jinfo', 'jlink', 'jmap', 'jmod', 'jps',
                       'jrunscript',
                       'jshell', 'jstack', 'jstat', 'jstatd', 'rmic', 'serialver', "jfr"]
     HEADLESS_BINARIES = ["java", "jjs", "keytool", "pack200",
-                         "rmid", "rmiregistry", "unpack200", 'alt-java']
+                         "rmid", "rmiregistry", "unpack200", 'alt-java', 'jcmd']
 
 
 class OpenJdk11NoJhsdb(OpenJdk11):
     DEFAULT_BINARIES = []
-    DEVEL_BINARIES = ['jar', 'jarsigner', 'javac', 'javadoc', 'javap', 'jcmd',
+    DEVEL_BINARIES = ['jar', 'jarsigner', 'javac', 'javadoc', 'javap',
                       'jconsole',
                       'jdb', 'jdeprscan', 'jdeps', 'jimage', 'jinfo', 'jlink', 'jmap', 'jmod', 'jps',
                       'jrunscript',
                       'jshell', 'jstack', 'jstat', 'jstatd', 'rmic', 'serialver', "jfr"]
     HEADLESS_BINARIES = ["java", "jjs", "keytool", "pack200",
-                         "rmid", "rmiregistry", "unpack200", 'alt-java']
+                         "rmid", "rmiregistry", "unpack200", 'alt-java', 'jcmd']
 
 
 class OpenJdkLatest(OpenJdk11):
