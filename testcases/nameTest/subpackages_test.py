@@ -197,6 +197,17 @@ class OpenJdk11armv7hl(OpenJdk11):
         return subpackages
 
 
+class OpenJdk11Els(OpenJdk11):
+    def _getSubPackages(self):
+        subpackages = super()._getSubPackages()
+        subpackages.add("jmods")
+        for subpackage in subpackages.copy():
+            if subpackage not in ["", "debuginfo"]:
+                subpackages.add("-".join([subpackage, "debug"]))
+        subpackages.add("debug")
+        return subpackages
+
+
 class OpenJdk11DebugFc(OpenJdk8Debug):
     def _getSubPackages(self):
         subpackages = super()._getSubPackages()
@@ -388,18 +399,8 @@ class SubpackagesTest(utils.core.base_xtest.BaseTest):
                     raise ex.UnknownJavaVersionException("Unrecognized OS.")
 
             elif rpms.getMajorVersionSimplified() == '11':
-                if self.getCurrentArch() in gc.getPpc32Arch() + gc.getS390Arch():
-                    self.csch = OpenJdk11()
-                    return
-                elif self.getCurrentArch() in gc.getArm32Achs():
-                    self.csch = OpenJdk11armv7hl()
-                    return
-                elif rpms.getOs() == gc.RHEL:
-                    self.csch = OpenJdk11DebugRhel()
-                    return
-                else:
-                    self.csch = OpenJdk11DebugFc()
-                    return
+                self.csch = OpenJdk11Els()
+                return
             elif int(rpms.getMajorVersionSimplified()) >= 13:
                 if self.getCurrentArch() in gc.getArm32Achs():
                     self.csch = OpenJdkLatestarmv7hl()
