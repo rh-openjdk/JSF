@@ -539,8 +539,8 @@ class Temurin8(bsm.BinarySlaveTestMethods):
     def _get_subpackages_with_binaries(self):
         return [tc.JRE, tc.JDK]
 
-    def _get_binary_directory_name(self, name):
-        return tc.JVM_DIR + "/{}/bin".format(ns.get_package_name(name))
+    def _get_binary_directory_path(self, name):
+        return tc.JVM_DIR + "/" + ns.get_package_name(name)
 
     def _get_jre_subpackage(self):
         return [tc.JRE]
@@ -565,12 +565,12 @@ class Temurin8(bsm.BinarySlaveTestMethods):
         if not tu.passed_or_failed(self, subpackage in hardcoded_binaries.keys(), "Binaries in unexpected subpackage: "
                                                                                   + subpackage):
             return
-        tu.passed_or_failed(self, sorted(binaries) == sorted(hardcoded_binaries[subpackage]),
+        missing_binaries = tu.two_lists_diff(hardcoded_binaries[subpackage], binaries)
+        extra_binaries = tu.two_lists_diff(binaries, hardcoded_binaries[subpackage])
+        is_same = sorted(binaries) == sorted(hardcoded_binaries[subpackage])
+        tu.passed_or_failed(self, is_same,
                                    "Hardcode check: binaries are not as expected in {} subpackage. Missing binaries: {}."
-                                   " Extra binaries: {}".format(subpackage, tu.two_lists_diff(hardcoded_binaries[subpackage],
-                                                                                  binaries),
-                                                                tu.two_lists_diff(binaries,
-                                                                                  hardcoded_binaries[subpackage])))
+                                   " Extra binaries: {}".format(subpackage, missing_binaries,extra_binaries))
         return
 
 
@@ -583,6 +583,9 @@ class Temurin11(Temurin8):
                     "jaotc", "jmod", "jdeprscan", "jimage", "jlink"]
     JRE_BINARIES = ["java", "keytool", "pack200", "rmid", "unpack200",
                     "jjs", "rmiregistry", "jfr", "jrunscript", "jaotc"]
+
+    def check_java_cgi(self, args=None):
+        return
 
 
 class Temurin17(Temurin11):

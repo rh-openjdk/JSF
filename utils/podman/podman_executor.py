@@ -120,12 +120,13 @@ class Podman:
             self.inited = True
             self.current_snapshot = initName
 
-    def executeScriptlet(self, rpmFile, scriptletName, extraFlag=""):
+    def executeScriptlet(self, rpmFile, scriptletName, extraFlag="", script_arg=None):
         executor, scriptletFile = self.saveScriptlet(rpmFile, scriptletName)
         scriptletFileName = scriptletFile.split("/")[-1]
         containerName = self.current_snapshot.split("_")[0] + "_" + scriptletName + (("_" + extraFlag) if extraFlag != "" else "")
+        script_arg_addition = [] if script_arg is None else ["--build-arg", "SCRIPTARG=" + script_arg]
         o, e, r = exxec.processToStringsWithResult(
-            self.mainCommand() + [containerName, "-f", "utils/podman/dockerfiles/RunScriptlet", ".", "--build-arg", "BASE_IMAGE=" + self.current_snapshot, "--build-arg", "EXECUTOR=" + executor, "--build-arg", "FILE=" + self.scriptletTmpDir + "/" + scriptletFileName])
+            self.mainCommand() + [containerName, "-f", "utils/podman/dockerfiles/RunScriptlet", ".", "--build-arg", "BASE_IMAGE=" + self.current_snapshot, "--build-arg", "EXECUTOR=" + executor, "--build-arg", "FILE=" + self.scriptletTmpDir + "/" + scriptletFileName] + script_arg_addition)
         if scriptletFileName + " failed!!" in o:
             r = 1
         if r != 0:
@@ -155,7 +156,7 @@ class Podman:
                                    os.path.basename(pkg),
                                    vc.Verbosity.TEST)
             try:
-                self.executeScriptlet(pkg, script, "a")
+                self.executeScriptlet(pkg, script, "a", "1")
             except utils.podman.podman_execution_exception.PodmanExecutionException:
                 la.LoggingAccess().log("        " + script + " script not found in " +
                                        os.path.basename(pkg),

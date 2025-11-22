@@ -101,7 +101,7 @@ class ScriptletTest(utils.core.base_xtest.BaseTest):
                         self.log("is " + str(len(content)) + " lines long")
                         self.log("executing " + scriplet + " in " + ntpath.basename(pkg))
                         arg = "1" if scriplet in ScripletStarterFinisher.installScriptlets else "0"
-                        o, r = DefaultPodman().executeScriptlet(pkg, scriplet, arg)
+                        o, r = DefaultPodman().executeScriptlet(pkg, scriplet, script_arg=arg)
                         self.log(scriplet + " returned " + str(r) + " of " + ntpath.basename(pkg))
                         tu.passed_or_failed(self, r == 0,
                                             "scriptlet {} returning non zero value for {}".format(scriplet, pkg)

@@ -223,6 +223,8 @@ def get_jvm_dir_pre_change(name):
 
 def get_jvm_dir_post_change(name):
     dir_name_no_suffix = get_major_package_name(name)
+    if get_vendor(name) == gc.ADOPTIUM:
+        dir_name_no_suffix = "-".join([gc.JAVA_STRING, get_major_ver(name), get_javaprefix(name)])
     for suffix in tc.get_debug_suffixes():
         if suffix in name:
             return dir_name_no_suffix + suffix

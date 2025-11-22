@@ -10,6 +10,7 @@ COPY $FILE /tmp/$FILE
 
 # Example of an operation that will be run on any base image
 ARG EXECUTOR
-RUN $EXECUTOR /tmp/$FILE || echo "$FILE failed!!"
+ARG SCRIPTARG
+RUN $EXECUTOR /tmp/$FILE $SCRIPTARG || echo "$FILE failed!!"
 
 CMD ["bash"]
