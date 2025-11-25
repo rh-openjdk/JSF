@@ -7,6 +7,8 @@ import config.runtime_config
 import utils.core.base_xtest
 import outputControl.logging_access as la
 import utils.test_utils as tu
+import utils.test_constants as tc
+import config.global_config as gc
 
 
 class Base(cs.JdkConfiguration):
@@ -48,10 +50,14 @@ class JdkRhel(Base):
     def _checkJreObsolete(self, obsoletes=None):
         self._document("Jdks in rhel must NOT obsolete anything. Possible exceptions: " +
                        ",".join(JdkRhel.jreExceptionsObsolete))
-        tu.passed_or_failed(self, len(set(obsoletes)-set(JdkRhel.jreExceptionsObsolete)) == 0,
+        tu.passed_or_failed(self, len(set(obsoletes)-set(self.jreExceptionsObsolete)) == 0,
                          "Number of obsoletes and obsoleteExceptions is not same.",
                          "this test is checking only count of obsoletes vs count of exceptions, needs rework")
         return self.passed, self.failed
+
+class TemurinRhel(JdkRhel):
+    jreExceptionsObsolete = ["-".join([gc.TEMURIN, config.runtime_config.RuntimeConfig().getRpmList().getMajorVersionSimplified(), tc.JRE]),
+                             "-".join([gc.TEMURIN, config.runtime_config.RuntimeConfig().getRpmList().getMajorVersionSimplified(), tc.JDK])]
 
 
 class ObsolateTest(utils.core.base_xtest.BaseTest):
@@ -66,6 +72,9 @@ class ObsolateTest(utils.core.base_xtest.BaseTest):
     def setCSCH(self):
         if config.runtime_config.RuntimeConfig().getRpmList().isItw() :
             self.csch = ITW()
+            return
+        elif config.runtime_config.RuntimeConfig().getRpmList().getVendor() == gc.TEMURIN:
+            self.csch = TemurinRhel()
             return
         else:
             self.csch = JdkRhel()

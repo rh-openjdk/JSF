@@ -273,7 +273,7 @@ class OpenJdkPostChange(OpenJdk8):
 
 class Temurin(BaseTest):
     def _get_target_java_directory(self, name):
-        return "-".join(["java", pkgsplit.get_major_ver(name), pkgsplit.get_javaprefix(name), pkgsplit.get_subpackage_only(name)])
+        return "-".join(["java", pkgsplit.get_major_ver(name), pkgsplit.get_vendor(name), pkgsplit.get_subpackage_only(name)])
 
     def _test_fill_in(self, file, filetype, expected_permission):
         """
@@ -351,7 +351,7 @@ class PermissionTest(bt.BaseTest):
             # TODO might be worth to check also other subdirectories
             self.csch = BaseTest()
             return
-        if rpms.getVendor() == gc.ADOPTIUM:
+        if rpms.getVendor() == gc.TEMURIN:
             self.csch = Temurin()
             return
         raise UnknownJavaVersionException("Unknown JDK version!!!")

@@ -90,7 +90,7 @@ class RequiresTest(bt.BaseTest):
 
     def setCSCH(self):
         rpms = rc.RuntimeConfig().getRpmList()
-        if rpms.getVendor() == gc.ADOPTIUM:
+        if rpms.getVendor() == gc.TEMURIN:
             self.csch = Temurin(self)
             return
         self.csch = Default(self)

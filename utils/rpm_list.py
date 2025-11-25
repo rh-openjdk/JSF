@@ -4,7 +4,6 @@ import utils.pkg_name_split as ns
 import config.global_config
 import config.runtime_config
 import outputControl.logging_access as la
-import utils.process_utils
 import utils.test_utils as tu
 import utils.test_constants as tc
 import config.verbosity_config as vc
@@ -211,7 +210,7 @@ class RpmList:
                 return int(self.getMajorVersionSimplified()) == 11
             else:
                 return int(self.getMajorVersionSimplified()) == 8
-        elif self.getVendor() == gc.ADOPTIUM:
+        elif self.getVendor() == gc.TEMURIN:
             return False
         else:
             if int(self.getOsVersionMajor()) <= 8:

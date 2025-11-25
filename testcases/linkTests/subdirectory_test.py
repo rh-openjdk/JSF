@@ -128,7 +128,7 @@ class BaseMethods(JdkConfiguration):
             name = os.path.basename(pkg)
             _subpkg = rename_default_subpkg(pkgsplit.get_subpackage_only(name))
             if _subpkg not in self._get_expected_subdirectories(name).keys():
-                continue
+                pass
             if not DefaultPodman().run_all_scriptlets_for_install(pkg):
                 SubdirectoryTest.instance.log("Skipping subdirectory test for {}".format(_subpkg), vc.Verbosity.TEST)
                 continue
@@ -212,8 +212,10 @@ class OpenJdkLatestPostChange(OpenJdk11):
         return "java" + "-" + self._get_major_version() + "-" + self.rpms.getVendor()
 class Temurin(OpenJdk11):
     def _get_expected_subdirectories(self, name):
-        subdirs = {JRE: ["-".join([gc.TEMURIN, self.rpms.getMajorVersionSimplified(), JRE])],
-                   JDK: ["-".join([gc.TEMURIN, self.rpms.getMajorVersionSimplified(), JDK])]}
+        subdirs = {}
+        for subpkg in [JRE, JDK]:
+            subdirs[subpkg] =["-".join([gc.JAVA_STRING, self.rpms.getMajorVersionSimplified(), gc.TEMURIN, subpkg]),
+                                       "-".join([gc.TEMURIN, self.rpms.getMajorVersionSimplified(), subpkg.lower()])]
         return subdirs
 
     def _get_expected_link(self, name):
@@ -334,7 +336,7 @@ class SubdirectoryTest(bt.BaseTest):
         elif rpms.getVendor() == gc.ITW:
             self.csch = ITW()
             return
-        elif rpms.getVendor() == gc.ADOPTIUM:
+        elif rpms.getVendor() == gc.TEMURIN:
             self.csch = Temurin()
             return
 

@@ -24,6 +24,8 @@ PREFIX_1100 = "1100"
 PREFIX_210 = "210"
 PREFIX_1700 = "1700"
 PREFIX_2100 = "2100"
+PREFIX_1161 = "1161"
+PREFIX_1712 = "1712"
 LEN_4 = 4
 LEN_5 = 5
 LEN_6 = 6
@@ -224,6 +226,11 @@ class Temurin(MajorCheck):
         super().__init__(LEN_4, PREFIX_111)
 
 
+class Temurin17(MajorCheck):
+    def __init__(self):
+        super().__init__(LEN_4, PREFIX_1712)
+
+
 class PriorityCheck(utils.core.base_xtest.BaseTest):
     instance = None
 
@@ -273,8 +280,8 @@ class PriorityCheck(utils.core.base_xtest.BaseTest):
         elif rpms.getVendor() == gc.ITW:
             self.csch = IcedTeaWeb()
             return
-        elif rpms.getVendor() == gc.ADOPTIUM:
-            self.csch = Temurin()
+        elif rpms.getVendor() == gc.TEMURIN:
+            self.csch = Temurin17()
             return
         else:
             raise ex.UnknownJavaVersionException("Unknown platform, java was not identified.")

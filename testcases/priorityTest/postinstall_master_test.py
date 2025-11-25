@@ -510,7 +510,7 @@ class PostinstallScriptTest(bt.BaseTest):
                     return
             else:
                 raise ex.UnknownJavaVersionException("Unknown Oracle java version.")
-        elif rpms.getVendor() == gc.ADOPTIUM:
+        elif rpms.getVendor() == gc.TEMURIN:
             self.csch = Temurin()
             return
         else:
