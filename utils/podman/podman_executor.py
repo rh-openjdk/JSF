@@ -101,6 +101,52 @@ class Podman:
         self.current_snapshot=containerName
 
 
+    def importAllRpms(self, rpmsDir, resetBuildRoot=True):
+        """
+        Import all RPM files from a specified directory into the container.
+        This method uses the initialized DefaultPodman image as the base and
+        copies all RPMs from the given directory into /rpms/ inside the container.
+        The RPMs are NOT extracted - they remain as .rpm files for use with
+        rpm/rpmbuild commands inside the container.
+        
+        This container is intended to be used throughout rpmbuild_utils to make
+        the code platform independent by executing rpm/rpmbuild commands inside
+        the container instead of on the host.
+        
+        Args:
+            rpmsDir: Path to the directory containing RPM files (relative to workspace)
+            resetBuildRoot: If True, starts from a clean initialized root
+        
+        Returns:
+            Tuple of (output, error, return_code)
+        """
+        containerName = "imported_all_rpms"
+        if resetBuildRoot:
+            self.provideCleanUsefullRoot()
+        
+        o, e, r = exxec.processToStringsWithResult(
+            self.mainCommand() +
+            [containerName, "-f", "utils/podman/dockerfiles/ImportAllRpms", ".",
+             "--build-arg", "BASE_IMAGE=" + self.current_snapshot,
+             "--build-arg", "RPMS_DIR=" + rpmsDir]
+        )
+        
+        if r != 0:
+            la.LoggingAccess().log(
+                "Importing all RPMs from " + rpmsDir + " to container " + containerName +
+                " failed with exit code " + str(r) + ".",
+                vc.Verbosity.PODMAN
+            )
+            la.LoggingAccess().log("Error message: " + e, vc.Verbosity.PODMAN)
+        else:
+            la.LoggingAccess().log(
+                "Successfully imported all RPMs from " + rpmsDir + " into container " + containerName,
+                vc.Verbosity.PODMAN
+            )
+        
+        self.current_snapshot = containerName
+        return o, e, r
+
     def executeCommand(self, cmds):
         o, e, r = exxec.executeShell(" ".join([self.command, "run", "--rm", "-it", self.current_snapshot, "/bin/sh", "-c", "\'"] + cmds + ["\'"]))
         la.LoggingAccess().log(e, vc.Verbosity.PODMAN)

@@ -1,6 +1,7 @@
 import outputControl.logging_access as la
 import utils.rpmbuild_utils as rpmbuild_utils
 import config.verbosity_config as vc
+
 # The get_methods nor find_on_disc are order-granting. However they seems to be sorted...
 # Sometimes. So this switch will ensure it.
 
