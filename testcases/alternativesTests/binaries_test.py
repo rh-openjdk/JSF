@@ -161,7 +161,7 @@ class BinariesTest(bt.BaseTest):
                 return
             else:
                 raise ex.UnknownJavaVersionException("Unknown Oracle java version")
-        elif rpms.getVendor() == gc.ADOPTIUM:
+        elif rpms.getVendor() == gc.TEMURIN:
             if int(rpms.getMajorVersionSimplified()) == 8:
                 self.csch = tcc.Temurin8(BinariesTest.instance)
                 return

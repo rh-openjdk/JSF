@@ -3,33 +3,74 @@ import utils.process_utils
 import utils.test_utils
 import os
 import config.verbosity_config as vc
+import utils.podman.podman_executor as pe
+
+# Global podman instance for executing rpm/rpmbuild commands
+_podman_instance = None
+
+def _get_podman_instance():
+    """Get or create the singleton podman instance with imported RPMs."""
+    global _podman_instance
+    if _podman_instance is None:
+        _podman_instance = pe.DefaultPodman()
+        # Check if imported_all_rpms container exists, if not we'll use current snapshot
+        try:
+            _podman_instance.getSnapshot("imported_all_rpms")
+        except:
+            la.LoggingAccess().log(
+                "Warning: imported_all_rpms container not found. Using current snapshot.",
+                vc.Verbosity.PODMAN
+            )
+    return _podman_instance
+
+def _execute_rpm_command_in_container(cmd_list):
+    """Execute an rpm command inside the podman container."""
+    podman = _get_podman_instance()
+    # Convert local file path to container path if it's an RPM file
+    container_cmd = []
+    for arg in cmd_list:
+        if arg.endswith('.rpm') and os.path.exists(arg):
+            # Convert to container path: /rpms/filename
+            container_cmd.append('/rpms/' + os.path.basename(arg))
+        else:
+            container_cmd.append(arg)
+    
+    output, return_code = podman.executeCommand(container_cmd)
+    return output
 
 def rpmbuildEval(macro):
-    return utils.process_utils.processToString(['rpmbuild', '--eval', '%{' + macro + '}'])
+    output = _execute_rpm_command_in_container(['rpmbuild', '--eval', '%{' + macro + '}'])
+    return output.strip()
 
 
 def listFilesInPackage(rpmFile):
-    return utils.process_utils.processAsStrings(['rpm', '-qlp', rpmFile])
+    output = _execute_rpm_command_in_container(['rpm', '-qlp', rpmFile])
+    return output.strip().split('\n') if output.strip() else []
 
 
 def listDocsInPackage(rpmFile):
-    return utils.process_utils.processAsStrings(['rpm', '-qldp', rpmFile])
+    output = _execute_rpm_command_in_container(['rpm', '-qldp', rpmFile])
+    return output.strip().split('\n') if output.strip() else []
 
 
 def listConfigFilesInPackage(rpmFile):
-    return utils.process_utils.processAsStrings(['rpm', '-qlcp', rpmFile])
+    output = _execute_rpm_command_in_container(['rpm', '-qlcp', rpmFile])
+    return output.strip().split('\n') if output.strip() else []
 
 
 def listOfRequires(rpmFile):
-    return utils.process_utils.processAsStrings(['rpm', '--requires', '-qp', rpmFile])
+    output = _execute_rpm_command_in_container(['rpm', '--requires', '-qp', rpmFile])
+    return output.strip().split('\n') if output.strip() else []
 
 
 def listOfProvides(rpmFile):
-    return utils.process_utils.processAsStrings(['rpm', '--provides', '-qp', rpmFile])
+    output = _execute_rpm_command_in_container(['rpm', '--provides', '-qp', rpmFile])
+    return output.strip().split('\n') if output.strip() else []
 
 
 def listOfObsoletes(rpmFile):
-    return utils.process_utils.processAsStrings(['rpm', '--obsoletes', '-qp', rpmFile])
+    output = _execute_rpm_command_in_container(['rpm', '--obsoletes', '-qp', rpmFile])
+    return output.strip().split('\n') if output.strip() else []
 
 
 def listOfVersionlessRequires(rpmFile):
@@ -131,8 +172,25 @@ def getSrciplet(rpmFile, scripletId):
         return scriptlets[key]
     la.LoggingAccess().log(key + " not yet cached, reading", vc.Verbosity.PODMAN)
     sf = ScripletStarterFinisher(scripletId)
-    script = utils.process_utils.processAsStrings(['rpm', '-qp', '--scripts', rpmFile], sf.start, sf.stop,
-                                                False)
+    
+    # Execute rpm command in container
+    output = _execute_rpm_command_in_container(['rpm', '-qp', '--scripts', rpmFile])
+    lines = output.strip().split('\n') if output.strip() else []
+    
+    # Filter lines using start/stop functions
+    script = []
+    started = False
+    for line in lines:
+        if not started:
+            if sf.start(line):
+                started = True
+                script.append(line)
+        else:
+            if sf.stop(line):
+                script.append(line)
+            else:
+                break
+    
     if len(script) == 0:
         scriptlet = ("/bin/sh", [])
     else:
@@ -144,6 +202,12 @@ def getSrciplet(rpmFile, scripletId):
 
 
 def unpackFilesFromRpm(rpmFile, destination):
+    """
+    Unpack files from RPM using the podman container.
+    Note: This extracts files to a temporary location in the container,
+    then we would need to copy them out. For now, keeping the original
+    implementation as it works directly with the filesystem.
+    """
     absFile = os.path.abspath(rpmFile)
     utils.test_utils.mkdir_p(destination)
     sout, serr, res = utils.process_utils.executeShell("cd "+destination+" && rpm2cpio "+absFile+" | cpio -idmv")

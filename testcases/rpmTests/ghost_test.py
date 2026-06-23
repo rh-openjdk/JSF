@@ -8,6 +8,8 @@ import utils.core.base_xtest as bt
 import utils.test_constants as tc
 import utils.core.configuration_specific as cs
 import config.runtime_config as rc
+import config.global_config as gc
+
 
 
 class GhostTest(bt.BaseTest):
@@ -21,15 +23,19 @@ class GhostTest(bt.BaseTest):
     def setCSCH(self):
         arch = self.getCurrentArch()
         rpms = rc.RuntimeConfig().getRpmList()
-        if int(rpms.getMajorVersionSimplified()) == 8:
-            if tc.is_arch_jitarch(arch) and "ppc" not in arch:
-                self.csch = Ojdk8JIT()
+        if rpms.getVendor() == gc.OPENJDK:
+            if int(rpms.getMajorVersionSimplified()) == 8:
+                if tc.is_arch_jitarch(arch) and "ppc" not in arch:
+                    self.csch = Ojdk8JIT()
+                    return
+                else:
+                    self.csch = Ojdk8NonJIT()
+                    return
+            elif int(rpms.getMajorVersionSimplified()) == 11:
+                self.csch = Ojdk11JIT()
                 return
-            else:
-                self.csch = Ojdk8NonJIT()
-                return
-        elif int(rpms.getMajorVersionSimplified()) == 11:
-            self.csch = Ojdk11JIT()
+        elif rpms.getVendor() == gc.TEMURIN:
+            self.csch = Temurin()
             return
         else:
             self.csch = OjdklatestJIT()
@@ -184,6 +190,12 @@ class OjdklatestJIT(Default):
             if arch == "i686" or arch == "armv7hl":
                 nvra = nvra.replace(arch, archinstall)
             # ghosts.add("/usr/lib/jvm/" + nvra + debugsuffix + "/lib/server/classes.jsa")
+        return ghosts
+
+class Temurin(OjdklatestJIT):
+    def _get_hardcoded_ghosts(self, file):
+        ghosts = super(Temurin, self)._get_hardcoded_ghosts(file)
+        ghosts.add("/usr/lib/jvm/java-{}-temurin-{}".format(ns.get_major_ver(file), ns.get_subpackage_only(file)))
         return ghosts
 
 

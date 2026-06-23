@@ -45,7 +45,7 @@ class GenericScriptletCsch(cs.JdkConfiguration):
 
 class TemurinScriptletCsch(GenericScriptletCsch):
     def _get_expected_scriptlets(self, pkg):
-        return [rpmbu.POSTINSTALL, rpmbu.PREUNINSTALL]
+        return [rpmbu.POSTINSTALL, rpmbu.PREUNINSTALL, rpmbu.POSTTRANS]
 
 
 class SemeruSriptletCsch(GenericScriptletCsch):
@@ -101,7 +101,7 @@ class ScriptletTest(utils.core.base_xtest.BaseTest):
                         self.log("is " + str(len(content)) + " lines long")
                         self.log("executing " + scriplet + " in " + ntpath.basename(pkg))
                         arg = "1" if scriplet in ScripletStarterFinisher.installScriptlets else "0"
-                        o, r = DefaultPodman().executeScriptlet(pkg, scriplet, arg)
+                        o, r = DefaultPodman().executeScriptlet(pkg, scriplet, script_arg=arg)
                         self.log(scriplet + " returned " + str(r) + " of " + ntpath.basename(pkg))
                         tu.passed_or_failed(self, r == 0,
                                             "scriptlet {} returning non zero value for {}".format(scriplet, pkg)
@@ -110,7 +110,7 @@ class ScriptletTest(utils.core.base_xtest.BaseTest):
 
     def setCSCH(self):
         rpms = rc.RuntimeConfig().getRpmList()
-        if rpms.getVendor() == gc.ADOPTIUM:
+        if rpms.getVendor() == gc.TEMURIN:
             self.csch = TemurinScriptletCsch()
         elif rpms.getVendor() == gc.IBM and int(rpms.getMajorVersionSimplified()) >= 21:
             self.csch = SemeruSriptletCsch()

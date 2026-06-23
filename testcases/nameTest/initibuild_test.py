@@ -169,7 +169,7 @@ class InitTest(utils.core.base_xtest.BaseTest):
         if rpms.getJava() == gc.ITW:
             self.log("Set ItwVersionCheck")
             self.csch = testcases.nameTest.connfigs.initbuild_config.ItwVersionCheck()
-        elif rpms.getVendor() == gc.ADOPTIUM:
+        elif rpms.getVendor() == gc.TEMURIN:
             self.log("Set TemurinCheck")
             self.csch = testcases.nameTest.connfigs.initbuild_config.TemurinCheck()
         else:

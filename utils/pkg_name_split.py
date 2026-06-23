@@ -14,8 +14,8 @@ def _rpmname_split_mapper(name):
     parts1 = _hyphen_split(name)
     parts2 = _dot_split(name)
 
-    if gc.TEMURIN in name:
-        return RpmNameParts(gc.TEMURIN, parts1[1], gc.ADOPTIUM, parts1[2], parts1[4], parts2[1], parts2[0], parts2[2])
+    #if gc.TEMURIN in name:
+    #    return RpmNameParts(gc.TEMURIN, parts1[1], gc.ADOPTIUM, parts1[3], parts1[4], parts2[1], parts2[0], parts2[2])
 
     return RpmNameParts(parts1[0], parts1[1], parts1[2], parts1[3], parts1[4], parts2[0], parts2[1], parts2[2])
 
@@ -42,6 +42,10 @@ def _hyphen_split(name):
         pkg = '-'.join(pkg)
         java_ver = version.split(".")[0]
         return [java, java_ver, vendor, pkg, version, whole_end]
+    elif name.startswith(gc.TEMURIN):
+        vendor, java_ver, *pkg, version, whole_end = hyphen_parts
+        pkg= '-'.join(pkg)
+        return [gc.JAVA_STRING, java_ver, vendor, pkg, version, whole_end]
     else:
         java, java_ver, vendor, *pkg, version, whole_end = hyphen_parts
         pkg = '-'.join(pkg)
@@ -223,6 +227,8 @@ def get_jvm_dir_pre_change(name):
 
 def get_jvm_dir_post_change(name):
     dir_name_no_suffix = get_major_package_name(name)
+    if get_vendor(name) == gc.ADOPTIUM:
+        dir_name_no_suffix = "-".join([gc.JAVA_STRING, get_major_ver(name), get_javaprefix(name)])
     for suffix in tc.get_debug_suffixes():
         if suffix in name:
             return dir_name_no_suffix + suffix

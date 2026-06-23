@@ -14,7 +14,6 @@ import config.runtime_config as rc
 import config.global_config as gc
 import utils.test_constants as tc
 import config.verbosity_config as vc
-import utils.pkg_name_split as ns
 
 
 MANPAGE_SUFFIX = ".1.gz"
@@ -538,7 +537,7 @@ class Temurin8(ManpageTestMethods):
 
     def _get_manpages_without_postscript(self, default_mans, subpkg):
         return self._clean_default_mpges(default_mans,
-                                  mexe.DefaultPodman().execute_ls(tc.JVM_DIR + "/" + self.rpms.getMajorPackage() + "-" + subpkg + "/man/man1")[0]
+                                  mexe.DefaultPodman().execute_ls(tc.JVM_DIR + "/" + "-".join([gc.JAVA_STRING, self.rpms.getMajorVersionSimplified(), self.rpms.getVendor(), subpkg]) + "/man/man1")[0]
                                   .split())
 
 
@@ -628,7 +627,7 @@ class ManpageTests(bt.BaseTest):
         elif rpms.getVendor() == gc.IBM_SEMERU:
             self.csch = OpenJdk21Semeru()
             return
-        elif rpms.getVendor() == gc.ADOPTIUM:
+        elif rpms.getVendor() == gc.TEMURIN:
             if int(rpms.getMajorVersionSimplified()) == 8:
                 self.csch = Temurin8()
                 return

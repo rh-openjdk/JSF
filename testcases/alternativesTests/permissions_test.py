@@ -271,6 +271,38 @@ class OpenJdkPostChange(OpenJdk8):
     def _get_target_java_directory(self, name):
         return pkgsplit.get_jvm_dir_post_change(name)
 
+class Temurin(BaseTest):
+    def _get_target_java_directory(self, name):
+        return "-".join(["java", pkgsplit.get_major_ver(name), pkgsplit.get_vendor(name), pkgsplit.get_subpackage_only(name)])
+
+    def _test_fill_in(self, file, filetype, expected_permission):
+        """
+        This method takes as an argument path to a file, type of the file for logs, expected permission and checks,
+        if it matches results from chroot. It also documents any fails or successful checks.
+        For Temurin I decided to be more permissive and allow it to have either same or lower permission for a file, then openjdk counterpart.
+        """
+        out, res = DefaultPodman().executeCommand(['stat -c "%a" ' + file])
+        if out == "775" and "ibm" in file:
+            PermissionTest.instance.log("Skipping " + file + ". Some unzipped Ibm packages are acting wierdly in podman. "
+                                                             "Howewer, in installed JDK, the permissions are correct.",
+                                        vc.Verbosity.TEST)
+            return
+        if res != 0:
+            passed_or_failed(self, False, filetype + " link is broken, could not find " + file)
+            return
+        else:
+            PermissionTest.instance.log(filetype + " {} exists. Checking permissions... ".format(file),
+                                        vc.Verbosity.PODMAN)
+        for p in range(3):
+            if not (int(out[p]) <= int(expected_permission[p])):
+                passed_or_failed(self, False, "Permissions of {} not as expected, should be {} but is "
+                                      "{}.".format(file, expected_permission, out))
+                return
+        PermissionTest.instance.log(filetype + " {} with permissions {}. Check "
+                                    "successful.".format(file, out), vc.Verbosity.PODMAN)
+        passed_or_failed(self, True, "")
+        return
+
 
 class Oracle(BaseTest):
     pass
@@ -319,8 +351,8 @@ class PermissionTest(bt.BaseTest):
             # TODO might be worth to check also other subdirectories
             self.csch = BaseTest()
             return
-        if rpms.getVendor() == gc.ADOPTIUM:
-            self.csch = BaseTest()
+        if rpms.getVendor() == gc.TEMURIN:
+            self.csch = Temurin()
             return
         raise UnknownJavaVersionException("Unknown JDK version!!!")
 

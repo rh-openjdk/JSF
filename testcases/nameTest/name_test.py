@@ -33,7 +33,7 @@ class NameTest(utils.core.base_xtest.BaseTest):
         super().__init__()
 
     def aMatchesB(self, a, b):
-            return self.csch.checkRegex(a)
+        return self.csch.checkRegex(a)
 
     def checkFilesAgainstValues(self, values, function):
         return self.checkFilesAgainstComparator(values, function, aInB)
@@ -107,7 +107,7 @@ class NameTest(utils.core.base_xtest.BaseTest):
             self.log("Set ItwRegexCheck")
             self.csch = testcases.nameTest.connfigs.nametest_config.ItwRegexCheck()
             return
-        if config.runtime_config.RuntimeConfig().getRpmList().getJava() == gc.TEMURIN:
+        if config.runtime_config.RuntimeConfig().getRpmList().getVendor() == gc.TEMURIN:
             self.log("Set Temurin Regex Check")
             self.csch = testcases.nameTest.connfigs.nametest_config.TemurinRegexCheck()
             return

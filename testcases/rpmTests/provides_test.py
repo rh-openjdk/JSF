@@ -234,7 +234,7 @@ class ProvidesTest(bt.BaseTest):
             self.log("Set ItwVersionCheck")
             self.csch = ITWeb(ProvidesTest.instance)
             return
-        elif rpms.getVendor() == gc.ADOPTIUM:
+        elif rpms.getVendor() == gc.TEMURIN:
             self.csch = Temurin(ProvidesTest.instance)
             return
         else:
