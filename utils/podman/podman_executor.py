@@ -102,7 +102,7 @@ class Podman:
 
 
     def executeCommand(self, cmds):
-        o, e, r = exxec.executeShell(" ".join([self.command, "run", "--rm", "-it", self.current_snapshot, "/bin/sh", "-c", "\'"] + cmds + ["\'"]))
+        o, e, r = exxec.executeShell(" ".join([self.command, "run", "--rm", self.current_snapshot, "/bin/sh", "-c", "\'"] + cmds + ["\'"]))
         la.LoggingAccess().log(e, vc.Verbosity.PODMAN)
         return o, r
 
