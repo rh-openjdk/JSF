@@ -56,7 +56,7 @@ class Podman:
         self.command = command
         self.inited = False
         self.alternatives = False
-        self.snapshots = dict()
+        self.snapshots = set()
         self.current_snapshot = None
         self.temp_name = "temp_name"
         self.containerRpmsLocation = "/rpms"
@@ -98,6 +98,8 @@ class Podman:
         if r != 0:
             la.LoggingAccess().log("Importing rpmfile " + rpmPath + " to the container name " + self.current_snapshot + " failed with exit code " + str(r) + ".")
             la.LoggingAccess().log("Error message given was: " + e)
+        else:
+            self.snapshots.add(containerName)
         self.current_snapshot=containerName
 
 
@@ -143,6 +145,7 @@ class Podman:
                 "Successfully imported all RPMs from " + rpmsDir + " into container " + containerName,
                 vc.Verbosity.PODMAN
             )
+            self.snapshots.add(containerName)
         
         self.current_snapshot = containerName
         return o, e, r
@@ -163,6 +166,8 @@ class Podman:
             o, e, r = exxec.processToStringsWithResult(self.mainCommand() + [initName, "-f","utils/podman/dockerfiles/Init", "."])
             if r != 0:
                 la.LoggingAccess().log("Container creation failed with exit code: " + str(r) + " and error message: " + e + ".")
+            else:
+                self.snapshots.add(initName)
             self.inited = True
             self.current_snapshot = initName
 
@@ -177,6 +182,8 @@ class Podman:
             r = 1
         if r != 0:
             la.LoggingAccess().log("Container creation failed with exit code: " + str(r) + " and error message: " + e + ".")
+        else:
+            self.snapshots.add(containerName)
         self.current_snapshot = containerName
         return o, r
 
@@ -187,11 +194,15 @@ class Podman:
         return executor, scritletFile
 
     def getSnapshot(self, name):
-        self.current_snapshot=name
+        _, _, r = exxec.executeShell("podman image exists " + name)
+        if r != 0:
+            raise utils.podman.podman_execution_exception.PodmanExecutionException(
+                "Snapshot '" + name + "' does not exist as a local podman image.")
+        self.current_snapshot = name
 
     def run_all_scriptlets_for_install(self, pkg):
         key = utils.pkg_name_split.get_subpackage_only((ntpath.basename(pkg))) + "_" + utils.rpmbuild_utils.ScripletStarterFinisher.installScriptlets[-1] + "_" + "a"
-        if key in self.snapshots:
+        if key in self.snapshots:  # snapshot was successfully built in a previous call
             la.LoggingAccess().log(pkg + " already installed in snapshot. Rolling to " + key,
                                    vc.Verbosity.PODMAN)
             self.getSnapshot(key)
