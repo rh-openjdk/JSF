@@ -4,6 +4,7 @@ import utils.test_utils
 import os
 import config.verbosity_config as vc
 import utils.podman.podman_executor as pe
+import utils.podman.podman_execution_exception
 
 # Global podman instance for executing rpm/rpmbuild commands
 _podman_instance = None
@@ -13,14 +14,11 @@ def _get_podman_instance():
     global _podman_instance
     if _podman_instance is None:
         _podman_instance = pe.DefaultPodman()
-        # Check if imported_all_rpms container exists, if not we'll use current snapshot
+        import config.runtime_config as rc
         try:
             _podman_instance.getSnapshot("imported_all_rpms")
-        except:
-            la.LoggingAccess().log(
-                "Warning: imported_all_rpms container not found. Using current snapshot.",
-                vc.Verbosity.PODMAN
-            )
+        except utils.podman.podman_execution_exception.PodmanExecutionException:
+            _podman_instance.importAllRpms(rc.RuntimeConfig().getPkgsDir())
     return _podman_instance
 
 def _execute_rpm_command_in_container(cmd_list):
