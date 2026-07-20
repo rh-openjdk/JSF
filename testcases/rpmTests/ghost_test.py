@@ -34,6 +34,9 @@ class GhostTest(bt.BaseTest):
             elif int(rpms.getMajorVersionSimplified()) == 11:
                 self.csch = Ojdk11JIT()
                 return
+            else:
+                self.csch = OjdklatestJIT()
+                return
         elif rpms.getVendor() == gc.TEMURIN:
             self.csch = Temurin()
             return

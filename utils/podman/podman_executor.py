@@ -194,10 +194,9 @@ class Podman:
         return executor, scritletFile
 
     def getSnapshot(self, name):
-        _, _, r = exxec.executeShell("podman image exists " + name)
-        if r != 0:
+        if name not in self.snapshots:
             raise utils.podman.podman_execution_exception.PodmanExecutionException(
-                "Snapshot '" + name + "' does not exist as a local podman image.")
+                "Snapshot '" + name + "' has not been built in this session.")
         self.current_snapshot = name
 
     def run_all_scriptlets_for_install(self, pkg):
