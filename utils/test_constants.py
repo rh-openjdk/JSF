@@ -28,6 +28,7 @@ JRE = "jre"
 JDK= "jdk"
 SDK = "java_sdk"
 OJDK8 = "ojdk8"
+ALL_RPMS_SNAPSHOT = "imported_all_rpms"
 OJDK8JFX = "ojdk8JFX"
 OJDK8DEBUG = "ojdk8debug"
 IGNOREDNAMEPARTS = ["playground."]

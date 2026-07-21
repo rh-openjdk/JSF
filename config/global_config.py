@@ -64,7 +64,7 @@ class DynamicArches(metaclass=Singleton):
         for arch in self.getPower64Achs():
             if 'le' in arch:
                 achs.append(arch)
-                return achs
+        return achs
 
 def getArm32Achs():
     # return ["armv7hl"]

@@ -8,6 +8,9 @@ import utils.core.base_xtest
 import outputControl.logging_access as la
 import utils.test_utils as tu
 import utils.rpmbuild_utils as rpmbu
+import utils.test_constants as tc
+import utils.podman.podman_executor as pe
+import utils.podman.podman_execution_exception
 
 
 class EmptyPackageTest(utils.core.base_xtest.BaseTest):
@@ -15,6 +18,11 @@ class EmptyPackageTest(utils.core.base_xtest.BaseTest):
         super().__init__()
 
     def test_checkNoPacakgeEmpty(self):
+        podman = pe.DefaultPodman()
+        try:
+            podman.getSnapshot(tc.ALL_RPMS_SNAPSHOT)
+        except utils.podman.podman_execution_exception.PodmanExecutionException:
+            podman.importAllRpms(config.runtime_config.RuntimeConfig().getPkgsDir())
         pkgs= config.runtime_config.RuntimeConfig().getRpmList().getAllFiles()
         for pkg in pkgs:
             self.log("checking: " + pkg)

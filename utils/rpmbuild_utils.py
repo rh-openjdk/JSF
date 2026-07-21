@@ -10,15 +10,13 @@ import utils.podman.podman_execution_exception
 _podman_instance = None
 
 def _get_podman_instance():
-    """Get or create the singleton podman instance with imported RPMs."""
+    """Get or create the singleton podman instance.
+    Ensures at minimum that the init snapshot exists so current_snapshot is never None.
+    """
     global _podman_instance
     if _podman_instance is None:
         _podman_instance = pe.DefaultPodman()
-        import config.runtime_config as rc
-        try:
-            _podman_instance.getSnapshot("imported_all_rpms")
-        except utils.podman.podman_execution_exception.PodmanExecutionException:
-            _podman_instance.importAllRpms(rc.RuntimeConfig().getPkgsDir())
+        _podman_instance.provideCleanUsefullRoot()
     return _podman_instance
 
 def _execute_rpm_command_in_container(cmd_list):
